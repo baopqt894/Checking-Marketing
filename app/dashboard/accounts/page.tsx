@@ -23,7 +23,7 @@ export default function TokenManagementPage() {
     const fetchTokens = async () => {
       try {
         setIsLoading(true)
-        const response = await fetch("https://admod-tracking.limgrow.com/api-docs/tokens")
+        const response = await fetch("https://admod-tracking.limgrow.com/tokens")
         if (response.ok) {
           const data = await response.json()
           setTokens(data)
@@ -40,7 +40,7 @@ export default function TokenManagementPage() {
 
   const handleAddToken = async (newToken: Token) => {
     try {
-      const response = await fetch("https://admod-tracking.limgrow.com/api-docs/tokens/add-new", {
+      const response = await fetch("https://admod-tracking.limgrow.com/tokens/add-new", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -71,7 +71,7 @@ export default function TokenManagementPage() {
     },
   ) => {
     try {
-      const response = await fetch(`https://admod-tracking.limgrow.com/api-docs/tokens/${id}`, {
+      const response = await fetch(`https://admod-tracking.limgrow.com/tokens/${id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
