@@ -114,7 +114,7 @@ export function EnvConfigModal({
     setIsReloginLoading(true);
     try {
       const response = await fetch(
-        `http://localhost:2703/tokens/${token._id}/relogin`,
+        `https://admod-tracking.limgrow.com/api-docs/tokens/${token._id}/relogin`,
         {
           method: "POST",
         }

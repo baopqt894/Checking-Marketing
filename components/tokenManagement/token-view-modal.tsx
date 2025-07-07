@@ -58,7 +58,7 @@ export default function TokenViewModal({ isOpen, token, onClose }: TokenViewModa
             console.log("✅ Access Token:", data.access_token)
             console.log("🔁 Refresh Token:", data.refresh_token)
 
-            const saveResponse = await fetch("http://localhost:2703/tokens/save-token", {
+            const saveResponse = await fetch("https://admod-tracking.limgrow.com/api-docs/tokens/save-token", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
