@@ -19,11 +19,11 @@ export default function TokenManagementPage() {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Fetch tokens from the API
     const fetchTokens = async () => {
       try {
         setIsLoading(true)
-        const response = await fetch("https://admod-tracking.limgrow.com/tokens")
+        const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL;
+        const response = await fetch(`${apiUrl}tokens`)
         if (response.ok) {
           const data = await response.json()
           setTokens(data)
@@ -40,7 +40,8 @@ export default function TokenManagementPage() {
 
   const handleAddToken = async (newToken: Token) => {
     try {
-      const response = await fetch("https://admod-tracking.limgrow.com/tokens/add-new", {
+      const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL;
+      const response = await fetch(`${apiUrl}tokens/add-new`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -71,7 +72,8 @@ export default function TokenManagementPage() {
     },
   ) => {
     try {
-      const response = await fetch(`https://admod-tracking.limgrow.com/tokens/${id}`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL;
+      const response = await fetch(`${apiUrl}/tokens/${id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
