@@ -113,8 +113,9 @@ export function EnvConfigModal({
   const handleRelogin = async () => {
     setIsReloginLoading(true);
     try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL;
       const response = await fetch(
-        `https://admod-tracking.limgrow.com/tokens/${token._id}/relogin`,
+        `${apiUrl}tokens/${token._id}/relogin`,
         {
           method: "POST",
         }
