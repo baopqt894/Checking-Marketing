@@ -65,16 +65,22 @@ export function EditAccountModal({ account, isOpen, onClose, onAccountUpdated }:
       // Extract app IDs and full AppInfo objects from account.appInfos
       const currentAppIds: string[] = []
       const currentAssignedApps: ActualAppInfo[] = []
+      const seenIds = new Set<string>() // Track seen IDs to prevent duplicates
       ;(account.appInfos || []).forEach((info) => {
         if (typeof info === "string") {
-          currentAppIds.push(info)
-          // For string IDs, we'll skip them since we want to avoid individual fetches
+          if (!seenIds.has(info)) {
+            currentAppIds.push(info)
+            seenIds.add(info)
+          }
         } else {
           // This is a full AppInfo object - cast to our actual structure
           const actualAppInfo = info as unknown as ActualAppInfo
-          console.log("Rendering assigned app:", actualAppInfo)
-          currentAppIds.push(actualAppInfo._id)
-          currentAssignedApps.push(actualAppInfo)
+          if (!seenIds.has(actualAppInfo._id)) {
+            console.log("Rendering assigned app:", actualAppInfo)
+            currentAppIds.push(actualAppInfo._id)
+            currentAssignedApps.push(actualAppInfo)
+            seenIds.add(actualAppInfo._id)
+          }
         }
       })
 
@@ -190,6 +196,13 @@ export function EditAccountModal({ account, isOpen, onClose, onAccountUpdated }:
         setAssignedApps((prevApps) => prevApps.filter((app) => app._id !== appId))
         return newIds
       } else {
+        // Check if app already exists in assignedApps to prevent duplicates
+        const appAlreadyExists = assignedApps.some((app) => app._id === appId)
+        if (appAlreadyExists) {
+          console.log("App already exists in assignedApps, skipping duplicate")
+          return prev
+        }
+
         // Add to assigned
         const newIds = [...prev, appId]
         // Find the app from availableApps and add to assignedApps
@@ -211,7 +224,15 @@ export function EditAccountModal({ account, isOpen, onClose, onAccountUpdated }:
             })),
             __v: publisherApp.__v || 0,
           }
-          setAssignedApps((prevApps) => [...prevApps, actualAppInfo])
+          setAssignedApps((prevApps) => {
+            // Double check for duplicates before adding
+            const exists = prevApps.some((app) => app._id === appId)
+            if (exists) {
+              console.log("Preventing duplicate in setAssignedApps")
+              return prevApps
+            }
+            return [...prevApps, actualAppInfo]
+          })
         }
         return newIds
       }
@@ -260,7 +281,7 @@ export function EditAccountModal({ account, isOpen, onClose, onAccountUpdated }:
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-7xl max-h-[100vh] overflow-y-auto">
+      <DialogContent className="max-w-7xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <User className="h-5 w-5" />
@@ -335,7 +356,7 @@ export function EditAccountModal({ account, isOpen, onClose, onAccountUpdated }:
               <h3 className="font-semibold">Assigned Apps ({assignedApps.length})</h3>
             </div>
 
-            <ScrollArea className="h-96">
+            <ScrollArea className="h-96 ">
               <div className="space-y-2">
                 {assignedApps.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
@@ -387,13 +408,14 @@ export function EditAccountModal({ account, isOpen, onClose, onAccountUpdated }:
             </ScrollArea>
           </div>
 
+          {/* Right Column - Available Apps */}
           <div className="border rounded-lg p-3">
             <div className="flex items-center gap-2 mb-4">
               <Plus className="h-4 w-4" />
               <h3 className="font-semibold">Available Apps ({currentlyAvailableApps.length})</h3>
             </div>
 
-            <ScrollArea className="h-96">
+            <ScrollArea className="h-96 ">
               <div className="space-y-2">
                 {loadingApps ? (
                   <div className="text-center py-8 text-muted-foreground">
