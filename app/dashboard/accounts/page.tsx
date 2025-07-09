@@ -1,142 +1,199 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useState, useMemo } from "react"
+import { DashboardHeader } from "@/components/dashboard-header"
+
+import { toast } from "sonner"
+import type { Account } from "@/types/account"
+
+import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { PlusCircle } from "lucide-react"
+import { AccountStatsCards } from "@/components/accountManagement/account-stats-cards"
+import { AccountFilters } from "@/components/accountManagement/account-filters"
+import { AccountTable } from "@/components/accountManagement/account-table"
+import { AccountDetailsModal } from "@/components/accountManagement/account-details-modal"
+import { CreateAccountModal } from "@/components/accountManagement/create-account-modal"
+import { EditAccountModal } from "@/components/accountManagement/edit-account-modal"
+import { DeleteAccountDialog } from "@/components/accountManagement/delete-account-dialog"
 
-import type { Token } from "@/types/token"
-import TokenTable from "@/components/tokenManagement/token-table"
-import TokenModal from "@/components/tokenManagement/token-modal"
-import TokenEditModal from "@/components/tokenManagement/token-edit-modal"
-import TokenViewModal from "@/components/tokenManagement/token-view-modal"
+export default function AccountManagement() {
+  const [accounts, setAccounts] = useState<Account[]>([])
+  const [loading, setLoading] = useState<boolean>(false)
 
-export default function TokenManagementPage() {
-  const [tokens, setTokens] = useState<Token[]>([])
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
-  const [isViewModalOpen, setIsViewModalOpen] = useState(false)
-  const [selectedToken, setSelectedToken] = useState<Token | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  // Filter states
+  const [searchTerm, setSearchTerm] = useState("")
+  const [statusFilter, setStatusFilter] = useState("all")
+  const [leaderFilter, setLeaderFilter] = useState("all")
+
+  // Modal states
+  const [selectedAccount, setSelectedAccount] = useState<Account | null>(null)
+  const [showDetailsModal, setShowDetailsModal] = useState(false)
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [accountToEdit, setAccountToEdit] = useState<Account | null>(null)
+  const [accountToDelete, setAccountToDelete] = useState<Account | null>(null)
+
+  // Filter accounts based on search and filters
+  const filteredAccounts = useMemo(() => {
+    return accounts.filter((account) => {
+      const matchesSearch =
+        account.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        account.email_private.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        account.email_company.toLowerCase().includes(searchTerm.toLowerCase())
+
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "active" && account.isActive) ||
+        (statusFilter === "inactive" && !account.isActive)
+
+      const matchesLeader =
+        leaderFilter === "all" ||
+        (leaderFilter === "leader" && account.isLeader) ||
+        (leaderFilter === "member" && !account.isLeader)
+
+      return matchesSearch && matchesStatus && matchesLeader
+    })
+  }, [accounts, searchTerm, statusFilter, leaderFilter])
+
+  const fetchAccounts = async () => {
+    setLoading(true)
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL
+      const response = await fetch(`${apiUrl}accounts`)
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data: Account[] = await response.json()
+      setAccounts(Array.isArray(data) ? data : [data])
+      toast.success(
+        `Loaded ${Array.isArray(data) ? data.length : 1} account${Array.isArray(data) && data.length !== 1 ? "s" : ""}`,
+      )
+    } catch (err) {
+      console.error("Failed to fetch accounts:", err)
+      toast.error("Failed to fetch accounts")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCreateAccount = () => {
+    setShowCreateModal(true)
+  }
+
+  const handleEditAccount = (account: Account) => {
+    setAccountToEdit(account)
+    setShowEditModal(true)
+  }
+
+  const handleDeleteAccount = (account: Account) => {
+    setAccountToDelete(account)
+    setShowDeleteDialog(true)
+  }
+
+  const handleCloseCreateModal = () => {
+    setShowCreateModal(false)
+  }
+
+  const handleCloseEditModal = () => {
+    setShowEditModal(false)
+    setAccountToEdit(null)
+  }
+
+  const handleCloseDeleteDialog = () => {
+    setShowDeleteDialog(false)
+    setAccountToDelete(null)
+  }
+
+  const handleAccountCreated = () => {
+    fetchAccounts()
+  }
+
+  const handleAccountUpdated = () => {
+    fetchAccounts()
+  }
+
+  const handleAccountDeleted = () => {
+    fetchAccounts()
+  }
+
+  const handleViewDetails = (account: Account) => {
+    setSelectedAccount(account)
+    setShowDetailsModal(true)
+  }
+
+  const handleCloseDetailsModal = () => {
+    setShowDetailsModal(false)
+    setSelectedAccount(null)
+  }
 
   useEffect(() => {
-    const fetchTokens = async () => {
-      try {
-        setIsLoading(true)
-        const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL;
-        const response = await fetch(`${apiUrl}tokens`)
-        if (response.ok) {
-          const data = await response.json()
-          setTokens(data)
-        }
-      } catch (error) {
-        console.error("Failed to fetch tokens:", error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    fetchTokens()
+    fetchAccounts()
   }, [])
 
-  const handleAddToken = async (newToken: Token) => {
-    try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL;
-      const response = await fetch(`${apiUrl}tokens/add-new`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(newToken),
-      })
-
-      if (response.ok) {
-        const createdToken = await response.json()
-        setTokens((prev) => [...prev, createdToken])
-        setIsModalOpen(false)
-      } else {
-        const error = await response.json()
-        throw new Error(error.message || "Failed to create token")
-      }
-    } catch (error) {
-      console.error("Error adding token:", error)
-      alert("Failed to add token. Please try again.")
-    }
-  }
-
-  const handleEditToken = async (
-    id: string,
-    updatedData: {
-      google_client_id: string
-      google_client_secret: string
-      google_redirect_uri: string
-    },
-  ) => {
-    try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL;
-      const response = await fetch(`${apiUrl}/tokens/${id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(updatedData),
-      })
-
-      if (response.ok) {
-        const updatedToken = await response.json()
-        setTokens((prev) => prev.map((token) => (token.id === id ? updatedToken : token)))
-        setIsEditModalOpen(false)
-        setSelectedToken(null)
-      } else {
-        const error = await response.json()
-        throw new Error(error.message || "Failed to update token")
-      }
-    } catch (error) {
-      console.error("Error updating token:", error)
-      alert("Failed to update token. Please try again.")
-    }
-  }
-
-  const handleOpenEditModal = (token: Token) => {
-    setSelectedToken(token)
-    setIsEditModalOpen(true)
-  }
-
-  const handleOpenViewModal = (token: Token) => {
-    setSelectedToken(token)
-    setIsViewModalOpen(true)
-  }
-
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Token Management</h1>
-        <Button onClick={() => setIsModalOpen(true)}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Add New Token
+    <div className="flex flex-col gap-6">
+      <DashboardHeader
+        title="Account Management"
+        description="Manage and monitor your AdMob accounts and associated tokens"
+      />
+      <div className="mb-4">
+        <Button onClick={handleCreateAccount} className="flex items-center gap-2">
+          <Plus className="h-4 w-4" />
+          Create Account
         </Button>
       </div>
 
-      <TokenTable tokens={tokens} isLoading={isLoading} onEdit={handleOpenEditModal} onView={handleOpenViewModal} />
+      <AccountStatsCards accounts={accounts} />
 
-      <TokenModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={handleAddToken} />
-
-      <TokenEditModal
-        isOpen={isEditModalOpen}
-        token={selectedToken}
-        onClose={() => {
-          setIsEditModalOpen(false)
-          setSelectedToken(null)
-        }}
-        onSubmit={handleEditToken}
+      <AccountFilters
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        statusFilter={statusFilter}
+        onStatusFilterChange={setStatusFilter}
+        leaderFilter={leaderFilter}
+        onLeaderFilterChange={setLeaderFilter}
+        onRefresh={fetchAccounts}
+        isLoading={loading}
       />
 
-      <TokenViewModal
-        isOpen={isViewModalOpen}
-        token={selectedToken}
-        onClose={() => {
-          setIsViewModalOpen(false)
-          setSelectedToken(null)
-        }}
+      {loading ? (
+        <div className="text-center text-muted-foreground py-20">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <h3 className="text-lg font-semibold mb-2">Loading Accounts</h3>
+          <p className="text-sm">Fetching account data...</p>
+        </div>
+      ) : (
+        <AccountTable
+          accounts={filteredAccounts}
+          onViewDetails={handleViewDetails}
+          onEditAccount={handleEditAccount}
+          onDeleteAccount={handleDeleteAccount}
+        />
+      )}
+
+      <AccountDetailsModal account={selectedAccount} isOpen={showDetailsModal} onClose={handleCloseDetailsModal} />
+
+      <CreateAccountModal
+        isOpen={showCreateModal}
+        onClose={handleCloseCreateModal}
+        onAccountCreated={handleAccountCreated}
+      />
+
+      <EditAccountModal
+        account={accountToEdit}
+        isOpen={showEditModal}
+        onClose={handleCloseEditModal}
+        onAccountUpdated={handleAccountUpdated}
+      />
+
+      <DeleteAccountDialog
+        account={accountToDelete}
+        isOpen={showDeleteDialog}
+        onClose={handleCloseDeleteDialog}
+        onAccountDeleted={handleAccountDeleted}
       />
     </div>
   )
