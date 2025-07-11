@@ -9,7 +9,6 @@ import { Copy, Users, Crown, CheckCircle, XCircle, Mail, Building, Smartphone, C
 import { toast } from "sonner"
 import type { Account } from "@/types/account"
 
-// Local interface matching actual API response
 interface ActualAppInfo {
   _id: string
   id: string

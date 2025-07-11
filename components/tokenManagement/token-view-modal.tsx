@@ -88,7 +88,6 @@ export default function TokenViewModal({ isOpen, token, onClose }: TokenViewModa
             console.log("✅ Access Token:", data.access_token)
             console.log("🔁 Refresh Token:", data.refresh_token)
 
-            // Update the current token state with new tokens
             setCurrentToken((prev) =>
               prev
                 ? {
@@ -317,7 +316,6 @@ export default function TokenViewModal({ isOpen, token, onClose }: TokenViewModa
       promises.push(promise)
     }
 
-    // Wait for all API calls to complete
     const results = await Promise.all(promises)
     return results.sort((a, b) => a.date.localeCompare(b.date))
   }
@@ -360,7 +358,6 @@ export default function TokenViewModal({ isOpen, token, onClose }: TokenViewModa
     console.log("🔄 Processing AdMob data...")
 
     rows.forEach((row) => {
-      console.log("Processing row:", row)
       const earnings = Number.parseInt(row.metricValues.ESTIMATED_EARNINGS?.microsValue || "0")
       const clicks = Number.parseInt(row.metricValues.CLICKS?.integerValue || "0")
       const impressions = Number.parseInt(row.metricValues.IMPRESSIONS?.integerValue || "0")
@@ -379,7 +376,6 @@ export default function TokenViewModal({ isOpen, token, onClose }: TokenViewModa
       const appId = row.dimensionValues.APP?.value || `app_${Math.random().toString(36).substr(2, 9)}`
       const platform = appLabel.toLowerCase().includes("ios") ? "IOS" : "ANDROID"
 
-      console.log("appMap:", appMap)
       if (appMap.has(appLabel)) {
         const existing = appMap.get(appLabel)!
         appMap.set(appLabel, {
@@ -424,7 +420,6 @@ export default function TokenViewModal({ isOpen, token, onClose }: TokenViewModa
       }
     })
 
-    // Fetch real daily data for each app
     console.log("🔄 Fetching daily data for each app...")
     const appDataPromises = Array.from(appMap.entries()).map(async ([appName, data]) => {
       console.log(`🔄 Fetching daily data for app: ${appName}`)
