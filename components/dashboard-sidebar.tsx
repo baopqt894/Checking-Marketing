@@ -10,7 +10,7 @@ export function DashboardSidebar() {
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Reports', href: '/dashboard/reports', icon: BarChart3 },
+    { name: 'Accounts', href: '/dashboard/accounts', icon: BarChart3 },
     { name: 'Apps', href: '/dashboard/apps', icon: Smartphone },
   ]
 

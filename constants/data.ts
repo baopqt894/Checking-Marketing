@@ -30,29 +30,16 @@ export const navItems: NavItem[] = [
     items: [] // No child items
   },
   {
-    title: 'Account',
-    url: '#',
+    title: 'Accounts',
+    url: '/dashboard/accounts',
     icon: 'billing',
-    isActive: true,
-
-    items: [
-      {
-        title: 'Profile',
-        url: '/dashboard/profile',
-        icon: 'userPen',
-        shortcut: ['m', 'm']
-      },
-      {
-        title: 'Login',
-        shortcut: ['l', 'l'],
-        url: '/',
-        icon: 'login'
-      }
-    ]
+    shortcut: ['k', 'k'],
+    isActive: false,
+    items: [] // No child items
   },
   {
-    title: 'Reports',
-    url: '/dashboard/reports',
+    title: 'Tokens',
+    url: '/dashboard/tokens',
     icon: 'kanban',
     shortcut: ['k', 'k'],
     isActive: false,

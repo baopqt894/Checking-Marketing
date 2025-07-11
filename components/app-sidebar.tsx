@@ -64,8 +64,8 @@ const data = {
       icon: Smartphone,
     },
     {
-      name: "Reports",
-      url: "/dashboard/reports",
+      name: "Accounts",
+      url: "/dashboard/accounts",
       icon: BarChart3,
     },
   ],
