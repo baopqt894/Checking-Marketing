@@ -45,7 +45,7 @@ interface EditAccountModalProps {
 }
 
 export function EditAccountModal({ account, isOpen, onClose, onAccountUpdated }: EditAccountModalProps) {
-  const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL || "http://localhost:2703/"
+  const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL
 
   const [formData, setFormData] = useState({
     name: "",
@@ -62,10 +62,9 @@ export function EditAccountModal({ account, isOpen, onClose, onAccountUpdated }:
 
   useEffect(() => {
     if (account) {
-      // Extract app IDs and full AppInfo objects from account.appInfos
       const currentAppIds: string[] = []
       const currentAssignedApps: ActualAppInfo[] = []
-      const seenIds = new Set<string>() // Track seen IDs to prevent duplicates
+      const seenIds = new Set<string>() 
       ;(account.appInfos || []).forEach((info) => {
         if (typeof info === "string") {
           if (!seenIds.has(info)) {
@@ -73,7 +72,6 @@ export function EditAccountModal({ account, isOpen, onClose, onAccountUpdated }:
             seenIds.add(info)
           }
         } else {
-          // This is a full AppInfo object - cast to our actual structure
           const actualAppInfo = info as unknown as ActualAppInfo
           if (!seenIds.has(actualAppInfo._id)) {
             console.log("Rendering assigned app:", actualAppInfo)
@@ -105,7 +103,6 @@ export function EditAccountModal({ account, isOpen, onClose, onAccountUpdated }:
   const fetchAvailableApps = async () => {
     setLoadingApps(true)
     try {
-      // Only fetch unassigned apps
       const unassignedResponse = await fetch(`${apiUrl}app-info/no-account`)
       if (!unassignedResponse.ok) throw new Error("Failed to fetch unassigned apps")
       const unassignedApps: PublisherApp[] = await unassignedResponse.json()
@@ -118,71 +115,33 @@ export function EditAccountModal({ account, isOpen, onClose, onAccountUpdated }:
     }
   }
 
-  const updateAccountApps = async (appInfoIds: string[], accountId: string) => {
+  const updateAccount = async (
+    accountData: {
+      name: string
+      email_private: string
+      email_company: string
+      isLeader: boolean
+      appInfos: string[]
+    },
+    accountId: string,
+  ) => {
     try {
-      // 1. First, update the account with the new app list
-      const accountResponse = await fetch(`${apiUrl}accounts/${accountId}/app-infos`, {
-        method: "PATCH",
+      const response = await fetch(`${apiUrl}accounts/${accountId}`, {
+        method: "PUT",
         headers: {
           accept: "*/*",
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ appInfoIds }),
+        body: JSON.stringify(accountData),
       })
 
-      if (!accountResponse.ok) {
-        throw new Error("Failed to update account apps")
+      if (!response.ok) {
+        throw new Error("Failed to update account")
       }
 
-      // 2. Then, update each app with the account_id
-      const appUpdatePromises = appInfoIds.map(async (appInfoId) => {
-        const appResponse = await fetch(`${apiUrl}app-info/${appInfoId}/account`, {
-          method: "PATCH",
-          headers: {
-            accept: "*/*",
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ account_id: accountId }),
-        })
-
-        if (!appResponse.ok) {
-          console.error(`Failed to update app ${appInfoId} with account_id`)
-        }
-
-        return appResponse
-      })
-
-      await Promise.all(appUpdatePromises)
-      console.log("Successfully updated account and all apps")
+      console.log("Successfully updated account")
     } catch (error) {
-      console.error("Error in updateAccountApps:", error)
-      throw error
-    }
-  }
-
-  const unassignAppsFromAccount = async (appInfoIds: string[], accountId: string) => {
-    try {
-      const appUpdatePromises = appInfoIds.map(async (appInfoId) => {
-        const appResponse = await fetch(`${apiUrl}app-info/${appInfoId}/account`, {
-          method: "PATCH",
-          headers: {
-            accept: "*/*",
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ account_id: null }),
-        })
-
-        if (!appResponse.ok) {
-          console.error(`Failed to remove account_id from app ${appInfoId}`)
-        }
-
-        return appResponse
-      })
-
-      await Promise.all(appUpdatePromises)
-      console.log("Successfully unassigned apps from account")
-    } catch (error) {
-      console.error("Error in unassignAppsFromAccount:", error)
+      console.error("Error in updateAccount:", error)
       throw error
     }
   }
@@ -190,13 +149,10 @@ export function EditAccountModal({ account, isOpen, onClose, onAccountUpdated }:
   const toggleAppAssignment = (appId: string) => {
     setAssignedAppIds((prev) => {
       if (prev.includes(appId)) {
-        // Remove from assigned
         const newIds = prev.filter((id) => id !== appId)
-        // Also remove from assignedApps
         setAssignedApps((prevApps) => prevApps.filter((app) => app._id !== appId))
         return newIds
       } else {
-        // Check if app already exists in assignedApps to prevent duplicates
         const appAlreadyExists = assignedApps.some((app) => app._id === appId)
         if (appAlreadyExists) {
           console.log("App already exists in assignedApps, skipping duplicate")
@@ -205,10 +161,8 @@ export function EditAccountModal({ account, isOpen, onClose, onAccountUpdated }:
 
         // Add to assigned
         const newIds = [...prev, appId]
-        // Find the app from availableApps and add to assignedApps
         const publisherApp = availableApps.find((app) => app._id === appId)
         if (publisherApp && publisherApp.app[0]) {
-          // Convert PublisherApp to ActualAppInfo format
           const actualAppInfo: ActualAppInfo = {
             _id: publisherApp._id,
             id: publisherApp._id,
@@ -225,7 +179,6 @@ export function EditAccountModal({ account, isOpen, onClose, onAccountUpdated }:
             __v: publisherApp.__v || 0,
           }
           setAssignedApps((prevApps) => {
-            // Double check for duplicates before adding
             const exists = prevApps.some((app) => app._id === appId)
             if (exists) {
               console.log("Preventing duplicate in setAssignedApps")
@@ -245,6 +198,16 @@ export function EditAccountModal({ account, isOpen, onClose, onAccountUpdated }:
 
     setIsLoading(true)
     try {
+      const accountData = {
+        name: formData.name,
+        email_private: formData.email_private,
+        email_company: formData.email_company,
+        isLeader: formData.isLeader,
+        appInfos: assignedAppIds,
+      }
+
+      await updateAccount(accountData, account.id)
+
       const originalAppIds = (account.appInfos || []).map((info) => {
         if (typeof info === "string") {
           return info
@@ -252,18 +215,53 @@ export function EditAccountModal({ account, isOpen, onClose, onAccountUpdated }:
         return (info as unknown as ActualAppInfo)._id
       })
 
-      // Determine which apps to assign and unassign
       const toAssign = assignedAppIds.filter((id) => !originalAppIds.includes(id))
       const toUnassign = originalAppIds.filter((id) => !assignedAppIds.includes(id))
 
-      // Handle unassignments first
-      if (toUnassign.length > 0) {
-        await unassignAppsFromAccount(toUnassign, account.id)
+      if (toAssign.length > 0) {
+        const assignPromises = toAssign.map(async (appInfoId) => {
+          const appResponse = await fetch(`${apiUrl}app-info/${appInfoId}/account`, {
+            method: "PATCH",
+            headers: {
+              accept: "*/*",
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ account_id: account.id }),
+          })
+
+          if (!appResponse.ok) {
+            console.error(`Failed to update app ${appInfoId} with account_id`)
+          }
+
+          return appResponse
+        })
+
+        await Promise.all(assignPromises)
       }
 
-      // Then handle assignments
-      await updateAccountApps(assignedAppIds, account.id)
+      // Update apps that need to be unassigned
+      if (toUnassign.length > 0) {
+        const unassignPromises = toUnassign.map(async (appInfoId) => {
+          const appResponse = await fetch(`${apiUrl}app-info/${appInfoId}/account`, {
+            method: "PATCH",
+            headers: {
+              accept: "*/*",
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ account_id: null }),
+          })
 
+          if (!appResponse.ok) {
+            console.error(`Failed to remove account_id from app ${appInfoId}`)
+          }
+
+          return appResponse
+        })
+
+        await Promise.all(unassignPromises)
+      }
+
+      console.log("Successfully updated account and all apps")
       toast.success("Account updated successfully!")
       onAccountUpdated()
       onClose()
@@ -281,7 +279,7 @@ export function EditAccountModal({ account, isOpen, onClose, onAccountUpdated }:
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-7xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <User className="h-5 w-5" />
@@ -290,7 +288,6 @@ export function EditAccountModal({ account, isOpen, onClose, onAccountUpdated }:
         </DialogHeader>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 overflow-hidden">
-          {/* Left Column - Account Information */}
           <div className="space-y-4">
             <div className="border rounded-lg p-3">
               <div className="flex items-center gap-2 mb-4">
@@ -349,14 +346,13 @@ export function EditAccountModal({ account, isOpen, onClose, onAccountUpdated }:
             </div>
           </div>
 
-          {/* Middle Column - Assigned Apps */}
           <div className="border rounded-lg p-3">
             <div className="flex items-center gap-2 mb-4">
               <Minus className="h-4 w-4" />
               <h3 className="font-semibold">Assigned Apps ({assignedApps.length})</h3>
             </div>
 
-            <ScrollArea className="h-96 ">
+            <ScrollArea className="h-96 pr-4">
               <div className="space-y-2">
                 {assignedApps.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
@@ -408,14 +404,13 @@ export function EditAccountModal({ account, isOpen, onClose, onAccountUpdated }:
             </ScrollArea>
           </div>
 
-          {/* Right Column - Available Apps */}
           <div className="border rounded-lg p-3">
             <div className="flex items-center gap-2 mb-4">
               <Plus className="h-4 w-4" />
               <h3 className="font-semibold">Available Apps ({currentlyAvailableApps.length})</h3>
             </div>
 
-            <ScrollArea className="h-96 ">
+            <ScrollArea className="h-96 pr-4">
               <div className="space-y-2">
                 {loadingApps ? (
                   <div className="text-center py-8 text-muted-foreground">
