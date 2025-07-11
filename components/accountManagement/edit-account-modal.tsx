@@ -45,7 +45,7 @@ interface EditAccountModalProps {
 }
 
 export function EditAccountModal({ account, isOpen, onClose, onAccountUpdated }: EditAccountModalProps) {
-  const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL || "http://localhost:2703/"
+  const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL
 
   const [formData, setFormData] = useState({
     name: "",
@@ -62,10 +62,9 @@ export function EditAccountModal({ account, isOpen, onClose, onAccountUpdated }:
 
   useEffect(() => {
     if (account) {
-      // Extract app IDs and full AppInfo objects from account.appInfos
       const currentAppIds: string[] = []
       const currentAssignedApps: ActualAppInfo[] = []
-      const seenIds = new Set<string>() // Track seen IDs to prevent duplicates
+      const seenIds = new Set<string>() 
       ;(account.appInfos || []).forEach((info) => {
         if (typeof info === "string") {
           if (!seenIds.has(info)) {
@@ -73,7 +72,6 @@ export function EditAccountModal({ account, isOpen, onClose, onAccountUpdated }:
             seenIds.add(info)
           }
         } else {
-          // This is a full AppInfo object - cast to our actual structure
           const actualAppInfo = info as unknown as ActualAppInfo
           if (!seenIds.has(actualAppInfo._id)) {
             console.log("Rendering assigned app:", actualAppInfo)
@@ -105,7 +103,6 @@ export function EditAccountModal({ account, isOpen, onClose, onAccountUpdated }:
   const fetchAvailableApps = async () => {
     setLoadingApps(true)
     try {
-      // Only fetch unassigned apps
       const unassignedResponse = await fetch(`${apiUrl}app-info/no-account`)
       if (!unassignedResponse.ok) throw new Error("Failed to fetch unassigned apps")
       const unassignedApps: PublisherApp[] = await unassignedResponse.json()
@@ -152,13 +149,10 @@ export function EditAccountModal({ account, isOpen, onClose, onAccountUpdated }:
   const toggleAppAssignment = (appId: string) => {
     setAssignedAppIds((prev) => {
       if (prev.includes(appId)) {
-        // Remove from assigned
         const newIds = prev.filter((id) => id !== appId)
-        // Also remove from assignedApps
         setAssignedApps((prevApps) => prevApps.filter((app) => app._id !== appId))
         return newIds
       } else {
-        // Check if app already exists in assignedApps to prevent duplicates
         const appAlreadyExists = assignedApps.some((app) => app._id === appId)
         if (appAlreadyExists) {
           console.log("App already exists in assignedApps, skipping duplicate")
@@ -167,10 +161,8 @@ export function EditAccountModal({ account, isOpen, onClose, onAccountUpdated }:
 
         // Add to assigned
         const newIds = [...prev, appId]
-        // Find the app from availableApps and add to assignedApps
         const publisherApp = availableApps.find((app) => app._id === appId)
         if (publisherApp && publisherApp.app[0]) {
-          // Convert PublisherApp to ActualAppInfo format
           const actualAppInfo: ActualAppInfo = {
             _id: publisherApp._id,
             id: publisherApp._id,
@@ -187,7 +179,6 @@ export function EditAccountModal({ account, isOpen, onClose, onAccountUpdated }:
             __v: publisherApp.__v || 0,
           }
           setAssignedApps((prevApps) => {
-            // Double check for duplicates before adding
             const exists = prevApps.some((app) => app._id === appId)
             if (exists) {
               console.log("Preventing duplicate in setAssignedApps")
@@ -207,7 +198,6 @@ export function EditAccountModal({ account, isOpen, onClose, onAccountUpdated }:
 
     setIsLoading(true)
     try {
-      // Prepare account data for PUT request
       const accountData = {
         name: formData.name,
         email_private: formData.email_private,
@@ -216,9 +206,62 @@ export function EditAccountModal({ account, isOpen, onClose, onAccountUpdated }:
         appInfos: assignedAppIds,
       }
 
-      // Update the entire account with PUT request
       await updateAccount(accountData, account.id)
 
+      const originalAppIds = (account.appInfos || []).map((info) => {
+        if (typeof info === "string") {
+          return info
+        }
+        return (info as unknown as ActualAppInfo)._id
+      })
+
+      const toAssign = assignedAppIds.filter((id) => !originalAppIds.includes(id))
+      const toUnassign = originalAppIds.filter((id) => !assignedAppIds.includes(id))
+
+      if (toAssign.length > 0) {
+        const assignPromises = toAssign.map(async (appInfoId) => {
+          const appResponse = await fetch(`${apiUrl}app-info/${appInfoId}/account`, {
+            method: "PATCH",
+            headers: {
+              accept: "*/*",
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ account_id: account.id }),
+          })
+
+          if (!appResponse.ok) {
+            console.error(`Failed to update app ${appInfoId} with account_id`)
+          }
+
+          return appResponse
+        })
+
+        await Promise.all(assignPromises)
+      }
+
+      // Update apps that need to be unassigned
+      if (toUnassign.length > 0) {
+        const unassignPromises = toUnassign.map(async (appInfoId) => {
+          const appResponse = await fetch(`${apiUrl}app-info/${appInfoId}/account`, {
+            method: "PATCH",
+            headers: {
+              accept: "*/*",
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ account_id: null }),
+          })
+
+          if (!appResponse.ok) {
+            console.error(`Failed to remove account_id from app ${appInfoId}`)
+          }
+
+          return appResponse
+        })
+
+        await Promise.all(unassignPromises)
+      }
+
+      console.log("Successfully updated account and all apps")
       toast.success("Account updated successfully!")
       onAccountUpdated()
       onClose()
@@ -245,7 +288,6 @@ export function EditAccountModal({ account, isOpen, onClose, onAccountUpdated }:
         </DialogHeader>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 overflow-hidden">
-          {/* Left Column - Account Information */}
           <div className="space-y-4">
             <div className="border rounded-lg p-3">
               <div className="flex items-center gap-2 mb-4">
@@ -304,7 +346,6 @@ export function EditAccountModal({ account, isOpen, onClose, onAccountUpdated }:
             </div>
           </div>
 
-          {/* Middle Column - Assigned Apps */}
           <div className="border rounded-lg p-3">
             <div className="flex items-center gap-2 mb-4">
               <Minus className="h-4 w-4" />
@@ -363,7 +404,6 @@ export function EditAccountModal({ account, isOpen, onClose, onAccountUpdated }:
             </ScrollArea>
           </div>
 
-          {/* Right Column - Available Apps */}
           <div className="border rounded-lg p-3">
             <div className="flex items-center gap-2 mb-4">
               <Plus className="h-4 w-4" />

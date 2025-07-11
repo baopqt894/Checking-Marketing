@@ -22,21 +22,19 @@ export default function AppManagement() {
   const [lastSyncTime, setLastSyncTime] = useState<string | null>(null)
   const [syncError, setSyncError] = useState<string | null>(null)
 
-  // Filter states
   const [searchTerm, setSearchTerm] = useState("")
   const [platformFilter, setPlatformFilter] = useState("all")
   const [approvalFilter, setApprovalFilter] = useState("all")
 
-  // Modal states
   const [selectedApp, setSelectedApp] = useState<ProcessedApp | null>(null)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
 
-  // Process raw API data into flat app list
   const processedApps = useMemo((): ProcessedApp[] => {
     const apps: ProcessedApp[] = []
 
     rawApps.forEach((publisherData) => {
       publisherData.app.forEach((appInfo) => {
+        console.log('appInfo',appInfo)
         apps.push({
           _id: appInfo._id,
           appId: appInfo.appId,
@@ -45,6 +43,7 @@ export default function AppManagement() {
           approvalState: appInfo.appApprovalState,
           publisherId: publisherData.Publisher_id,
           linkedAppInfo: appInfo.linkedAppInfo,
+          account_id: publisherData.account_id
         })
       })
     })
@@ -52,7 +51,6 @@ export default function AppManagement() {
     return apps
   }, [rawApps])
 
-  // Filter apps based on search and filters
   const filteredApps = useMemo(() => {
     return processedApps.filter((app) => {
       const matchesSearch =

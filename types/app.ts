@@ -11,6 +11,7 @@ export interface AppInfo {
     displayName: string
   }
   _id: string
+ 
 }
 
 export interface PublisherApp {
@@ -18,6 +19,13 @@ export interface PublisherApp {
   app: AppInfo[]
   Publisher_id: string
   __v: number
+  account_id:{
+    _id:string;
+    name:string;
+    isLeader: boolean;
+    email_company: string;
+    email_private:string;
+  }
 }
 
 export interface ProcessedApp {
@@ -30,5 +38,12 @@ export interface ProcessedApp {
   linkedAppInfo?: {
     appStoreId: string
     displayName: string
+  }
+  account_id:{
+    _id:string;
+    name:string;
+    isLeader: boolean;
+    email_company: string;
+    email_private:string;
   }
 }

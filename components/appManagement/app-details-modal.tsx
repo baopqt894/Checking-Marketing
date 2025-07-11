@@ -4,7 +4,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ExternalLink, Copy, Smartphone, CheckCircle, AlertCircle, Globe } from "lucide-react"
+import {
+  ExternalLink,
+  Copy,
+  Smartphone,
+  CheckCircle,
+  AlertCircle,
+  Globe,
+  User,
+  Crown,
+  Mail,
+  Building,
+} from "lucide-react"
 import { toast } from "sonner"
 import type { ProcessedApp } from "@/types/app"
 
@@ -16,7 +27,7 @@ interface AppDetailsModalProps {
 
 export function AppDetailsModal({ app, isOpen, onClose }: AppDetailsModalProps) {
   if (!app) return null
-
+  console.log('app:',app)
   const copyToClipboard = async (text: string, label: string) => {
     try {
       await navigator.clipboard.writeText(text)
@@ -46,9 +57,11 @@ export function AppDetailsModal({ app, isOpen, onClose }: AppDetailsModalProps) 
 
   const StatusIcon = getStatusIcon(app.approvalState)
 
+  const accountInfo = app.account_id
+  console.log('accountInfo',accountInfo)
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Smartphone className="h-5 w-5" />
@@ -80,7 +93,7 @@ export function AppDetailsModal({ app, isOpen, onClose }: AppDetailsModalProps) 
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
@@ -134,20 +147,108 @@ export function AppDetailsModal({ app, isOpen, onClose }: AppDetailsModalProps) 
               </CardContent>
             </Card>
 
-            {app.linkedAppInfo && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <ExternalLink className="h-4 w-4" />
-                    Store Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  Account Assignment
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {accountInfo ? (
+                  <>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Assigned To</label>
+                      <div className="flex items-center gap-2 mt-1">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">{accountInfo.name}</span>
+                        {accountInfo.isLeader && (
+                          <Badge variant="outline" className="text-yellow-600 border-yellow-200">
+                            <Crown className="w-3 h-3 mr-1" />
+                            Leader
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Account ID</label>
+                      <div className="flex items-center gap-2 mt-1">
+                        <code className="text-sm bg-muted px-2 py-1 rounded flex-1">{accountInfo._id}</code>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => copyToClipboard(accountInfo._id, "Account ID")}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Private Email</label>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Mail className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">{accountInfo.email_private}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => copyToClipboard(accountInfo.email_private, "Private Email")}
+                          className="h-6 w-6 p-0"
+                        >
+                          <Copy className="h-2 w-2" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Company Email</label>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Building className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">{accountInfo.email_company}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => copyToClipboard(accountInfo.email_company, "Company Email")}
+                          className="h-6 w-6 p-0"
+                        >
+                          <Copy className="h-2 w-2" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center py-6">
+                    <div className="bg-muted rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
+                      <User className="h-6 w-6 text-muted-foreground" />
+                    </div>
+                    <p className="text-sm text-muted-foreground font-medium">Chưa được assign cho ai</p>
+                    <p className="text-xs text-muted-foreground mt-1">App này chưa được gán cho account nào</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Store Information */}
+          {app.linkedAppInfo && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <ExternalLink className="h-4 w-4" />
+                  Store Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Store Name</label>
                     <p className="text-sm mt-1">{app.linkedAppInfo.displayName}</p>
                   </div>
-
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Store ID</label>
                     <div className="flex items-center gap-2 mt-1">
@@ -162,15 +263,14 @@ export function AppDetailsModal({ app, isOpen, onClose }: AppDetailsModalProps) 
                       </Button>
                     </div>
                   </div>
-
-                  <Button onClick={openAppStore} className="w-full flex items-center gap-2" size="sm">
-                    <ExternalLink className="h-4 w-4" />
-                    View in {app.platform === "ANDROID" ? "Play Store" : "App Store"}
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+                </div>
+                <Button onClick={openAppStore} className="w-full flex items-center gap-2" size="sm">
+                  <ExternalLink className="h-4 w-4" />
+                  View in {app.platform === "ANDROID" ? "Play Store" : "App Store"}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Status Information */}
           <Card>
