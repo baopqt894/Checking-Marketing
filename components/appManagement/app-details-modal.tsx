@@ -73,8 +73,8 @@ export function AppDetailsModal({ app, isOpen, onClose }: AppDetailsModalProps) 
           <div className="flex items-start justify-between">
             <div className="space-y-2">
               <h2 className="text-xl font-semibold">{app.displayName}</h2>
-              {app.linkedAppInfo && app.linkedAppInfo.displayName !== app.displayName && (
-                <p className="text-muted-foreground">Store Name: {app.linkedAppInfo.displayName}</p>
+              {app.linkedAppInfo && app.linkedAppInfo?.displayName !== app.displayName && (
+                <p className="text-muted-foreground">Store Name: {app.linkedAppInfo?.displayName ?? "Unknown App"}</p>
               )}
             </div>
             <div className="flex items-center gap-2">
