@@ -86,13 +86,16 @@ export function AppTable({ apps, onViewDetails }: AppTableProps) {
           </TableHeader>
           <TableBody>
             {apps.map((app) => (
-              <TableRow key={app._id} className="hover:bg-muted/50">
+              <TableRow key={app._id || app.appId} className="hover:bg-muted/50">
                 <TableCell>
                   <div className="flex flex-col">
                     <span className="font-medium">{app.displayName}</span>
-                    {app.linkedAppInfo && app.linkedAppInfo.displayName !== app.displayName && (
-                      <span className="text-xs text-muted-foreground">Store: {app.linkedAppInfo.displayName}</span>
-                    )}
+                    {app.linkedAppInfo?.displayName &&
+                      app.linkedAppInfo.displayName !== app.displayName && (
+                        <span className="text-xs text-muted-foreground">
+                          Store: {app.linkedAppInfo.displayName}
+                        </span>
+                      )}
                   </div>
                 </TableCell>
                 <TableCell>
@@ -105,7 +108,7 @@ export function AppTable({ apps, onViewDetails }: AppTableProps) {
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-2">
-                    {app.linkedAppInfo && (
+                    {app.linkedAppInfo?.appStoreId && (
                       <Button
                         variant="ghost"
                         size="sm"
@@ -126,6 +129,7 @@ export function AppTable({ apps, onViewDetails }: AppTableProps) {
               </TableRow>
             ))}
           </TableBody>
+
         </Table>
       </CardContent>
     </Card>
