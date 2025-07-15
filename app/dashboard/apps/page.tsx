@@ -38,7 +38,7 @@ export default function AppManagement() {
         apps.push({
           _id: appInfo._id,
           appId: appInfo.appId,
-          displayName: appInfo.manualAppInfo.displayName,
+          displayName: appInfo.manualAppInfo?.displayName ?? 'Unknow',
           platform: appInfo.platform,
           approvalState: appInfo.appApprovalState,
           publisherId: publisherData.Publisher_id,
