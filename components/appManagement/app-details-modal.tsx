@@ -27,7 +27,7 @@ interface AppDetailsModalProps {
 
 export function AppDetailsModal({ app, isOpen, onClose }: AppDetailsModalProps) {
   if (!app) return null
-  console.log('app:',app)
+  console.log('app:', app)
   const copyToClipboard = async (text: string, label: string) => {
     try {
       await navigator.clipboard.writeText(text)
@@ -58,7 +58,7 @@ export function AppDetailsModal({ app, isOpen, onClose }: AppDetailsModalProps) 
   const StatusIcon = getStatusIcon(app.approvalState)
 
   const accountInfo = app.account_id
-  console.log('accountInfo',accountInfo)
+  console.log('accountInfo', accountInfo)
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
@@ -252,7 +252,9 @@ export function AppDetailsModal({ app, isOpen, onClose }: AppDetailsModalProps) 
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Store ID</label>
                     <div className="flex items-center gap-2 mt-1">
-                      <code className="text-sm bg-muted px-2 py-1 rounded flex-1">{app.linkedAppInfo.appStoreId}</code>
+                      <code className="text-sm bg-muted px-2 py-1 rounded flex-1 truncate max-w-[200px]">
+                        {app.linkedAppInfo?.appStoreId}
+                      </code>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -262,6 +264,7 @@ export function AppDetailsModal({ app, isOpen, onClose }: AppDetailsModalProps) 
                         <Copy className="h-3 w-3" />
                       </Button>
                     </div>
+
                   </div>
                 </div>
                 <Button onClick={openAppStore} className="w-full flex items-center gap-2" size="sm">
