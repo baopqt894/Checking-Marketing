@@ -2,160 +2,56 @@
 
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { AlertTriangle, Eye, Search, Filter } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Search, Eye, ChevronLeft, ChevronRight } from "lucide-react"
 import { useRouter } from "next/navigation"
+
 interface AppCountryData {
   appId: string
-  country: string
-  today: any
-  yesterday: any
-  avg7: any
-  avg30: any
+  appName: string
+  metrics: {
+    ESTIMATED_EARNINGS: number
+    CLICKS: number
+    IMPRESSIONS: number
+    OBSERVED_ECPM: number
+    IMPRESSION_CTR: number
+    MATCH_RATE: number
+  }
 }
 
 interface AppOverviewTableProps {
   apiData: AppCountryData[]
-  onSelectApp?: (appId: string) => void // Made optional since we'll use router
+  onSelectApp?: (appId: string) => void
 }
 
-export function AppOverviewTable({ apiData, onSelectApp }: AppOverviewTableProps) {
+export function AppOverviewTable({ apiData }: AppOverviewTableProps) {
   const [searchTerm, setSearchTerm] = useState("")
-  const [sortBy, setSortBy] = useState<string>("earnings")
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
-  const router = useRouter() // Added Next.js router
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
+  const router = useRouter()
 
-  const apps = [...new Set(apiData.map((item) => item.appId))]
+  const filteredApps = apiData.filter(
+    (app) =>
+      app.appName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      app.appId.toLowerCase().includes(searchTerm.toLowerCase()),
+  )
 
-  const handleAppClick = (appId: string) => {
-    const encodedAppId = encodeURIComponent(appId)
-    router.push(`/dashboard/app-performance/${encodedAppId}`)
+  const totalPages = Math.ceil(filteredApps.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const currentApps = filteredApps.slice(startIndex, endIndex)
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value)
+    setCurrentPage(1)
   }
 
-  const getAppHealthStatus = (appId: string) => {
-    const appCountries = apiData.filter((item) => item.appId === appId)
-
-    let hasAlert = false
-    let hasWarning = false
-
-    appCountries.forEach((item) => {
-      const calculateChange = (current: number, previous: number) => {
-        if (!previous || previous === 0) return 0
-        return ((current - previous) / previous) * 100
-      }
-
-      const currentData = Object.keys(item.today).length > 0 ? item.today : item.avg7
-      const previousData = Object.keys(item.yesterday).length > 0 ? item.yesterday : item.avg30
-
-      if (currentData && previousData) {
-        const changes = {
-          ESTIMATED_EARNINGS: calculateChange(
-            currentData.ESTIMATED_EARNINGS || 0,
-            previousData.ESTIMATED_EARNINGS || 0,
-          ),
-          CLICKS: calculateChange(currentData.CLICKS || 0, previousData.CLICKS || 0),
-          IMPRESSIONS: calculateChange(currentData.IMPRESSIONS || 0, previousData.IMPRESSIONS || 0),
-          IMPRESSION_CTR: calculateChange(currentData.IMPRESSION_CTR || 0, previousData.IMPRESSION_CTR || 0),
-          MATCH_RATE: calculateChange(currentData.MATCH_RATE || 0, previousData.MATCH_RATE || 0),
-        }
-
-        Object.entries(changes).forEach(([key, change]) => {
-          if (change < -20) hasAlert = true
-          else if (change < -10) hasWarning = true
-        })
-      }
-    })
-
-    return hasAlert ? "danger" : hasWarning ? "warning" : "normal"
+  const handleItemsPerPageChange = (value: string) => {
+    setItemsPerPage(Number.parseInt(value))
+    setCurrentPage(1)
   }
-
-  const getAppSummary = (appId: string) => {
-    const appCountries = apiData.filter((item) => item.appId === appId)
-
-    const countries = appCountries.map((item) => item.country)
-
-    const totalEarnings = appCountries.reduce((sum, item) => {
-      const data = Object.keys(item.today).length > 0 ? item.today : item.avg7
-      return sum + (data.ESTIMATED_EARNINGS || 0)
-    }, 0)
-
-    const totalClicks = appCountries.reduce((sum, item) => {
-      const data = Object.keys(item.today).length > 0 ? item.today : item.avg7
-      return sum + (data.CLICKS || 0)
-    }, 0)
-
-    const totalImpressions = appCountries.reduce((sum, item) => {
-      const data = Object.keys(item.today).length > 0 ? item.today : item.avg7
-      return sum + (data.IMPRESSIONS || 0)
-    }, 0)
-
-    const avgCtr =
-      appCountries.reduce((sum, item) => {
-        const data = Object.keys(item.today).length > 0 ? item.today : item.avg7
-        return sum + (data.IMPRESSION_CTR || 0)
-      }, 0) / appCountries.length
-
-    const avgMatchRate =
-      appCountries.reduce((sum, item) => {
-        const data = Object.keys(item.today).length > 0 ? item.today : item.avg7
-        return sum + (data.MATCH_RATE || 0)
-      }, 0) / appCountries.length
-
-    return {
-      countries,
-      totalEarnings,
-      totalClicks,
-      totalImpressions,
-      avgCtr,
-      avgMatchRate,
-      countryCount: countries.length,
-    }
-  }
-
-  const getRowStyle = (status: string) => {
-    switch (status) {
-      case "danger":
-        return "bg-red-50 border-l-4 border-red-500 hover:bg-red-100"
-      case "warning":
-        return "bg-orange-50 border-l-4 border-orange-500 hover:bg-orange-100"
-      default:
-        return "hover:bg-gray-50"
-    }
-  }
-
-  const sortedAndFilteredApps = apps
-    .filter((app) => app.toLowerCase().includes(searchTerm.toLowerCase()))
-    .sort((a, b) => {
-      const summaryA = getAppSummary(a)
-      const summaryB = getAppSummary(b)
-
-      let valueA, valueB
-      switch (sortBy) {
-        case "earnings":
-          valueA = summaryA.totalEarnings
-          valueB = summaryB.totalEarnings
-          break
-        case "clicks":
-          valueA = summaryA.totalClicks
-          valueB = summaryB.totalClicks
-          break
-        case "ctr":
-          valueA = summaryA.avgCtr
-          valueB = summaryB.avgCtr
-          break
-        case "countries":
-          valueA = summaryA.countryCount
-          valueB = summaryB.countryCount
-          break
-        default:
-          valueA = summaryA.totalEarnings
-          valueB = summaryB.totalEarnings
-      }
-
-      return sortOrder === "desc" ? valueB - valueA : valueA - valueB
-    })
 
   return (
     <>
@@ -165,38 +61,30 @@ export function AppOverviewTable({ apiData, onSelectApp }: AppOverviewTableProps
           <Input
             placeholder="Search apps..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             className="bg-white border-gray-300 text-gray-900 placeholder-gray-500"
           />
         </div>
         <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-gray-500" />
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="bg-white border border-gray-300 text-gray-900 rounded px-3 py-2 text-sm"
-          >
-            <option value="earnings">Sort by Earnings</option>
-            <option value="clicks">Sort by Clicks</option>
-            <option value="ctr">Sort by CTR</option>
-            <option value="countries">Sort by Countries</option>
-          </select>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")}
-            className="text-gray-600 hover:text-gray-900"
-          >
-            {sortOrder === "desc" ? "↓" : "↑"}
-          </Button>
+          <span className="text-sm text-gray-600">Show:</span>
+          <Select value={itemsPerPage.toString()} onValueChange={handleItemsPerPageChange}>
+            <SelectTrigger className="w-20">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">10</SelectItem>
+              <SelectItem value="20">20</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
-      <Card className="border-gray-200">
+      <Card className="border-gray-200 mt-4">
         <CardHeader>
           <CardTitle className="text-gray-900">App Performance Overview</CardTitle>
           <CardDescription className="text-gray-600">
-            Click on any app to view detailed country breakdown
+            Today's performance data for all apps ({filteredApps.length} apps found)
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -205,94 +93,80 @@ export function AppOverviewTable({ apiData, onSelectApp }: AppOverviewTableProps
               <thead>
                 <tr className="border-b border-gray-200">
                   <th className="text-left p-3 text-gray-700 font-medium">App Name</th>
-                  <th className="text-center p-3 text-gray-700 font-medium">Markets</th>
-                  <th className="text-right p-3 text-gray-700 font-medium">Total Earnings ($)</th>
-                  <th className="text-right p-3 text-gray-700 font-medium">Total Clicks</th>
-                  <th className="text-right p-3 text-gray-700 font-medium">Avg CTR (%)</th>
+                  <th className="text-right p-3 text-gray-700 font-medium">Earnings ($)</th>
+                  <th className="text-right p-3 text-gray-700 font-medium">Clicks</th>
+                  <th className="text-right p-3 text-gray-700 font-medium">Impressions</th>
+                  <th className="text-right p-3 text-gray-700 font-medium">eCPM ($)</th>
+                  <th className="text-right p-3 text-gray-700 font-medium">CTR (%)</th>
                   <th className="text-right p-3 text-gray-700 font-medium">Match Rate (%)</th>
-                  <th className="text-center p-3 text-gray-700 font-medium">Status</th>
                   <th className="text-center p-3 text-gray-700 font-medium">Action</th>
                 </tr>
               </thead>
               <tbody>
-                {sortedAndFilteredApps.map((app) => {
-                  const healthStatus = getAppHealthStatus(app)
-                  const summary = getAppSummary(app)
-
-                  return (
-                    <tr
-                      key={app}
-                      className={`border-b border-gray-100 cursor-pointer transition-colors ${getRowStyle(healthStatus)}`}
-                      onClick={(e) => {
-                        e.preventDefault()
-                        handleAppClick(app) // Use new router-based handler
-                      }}
-                    >
-                      <td className="p-3 font-medium">
-                        <div className="flex items-center gap-2 text-gray-900">
-                          <div
-                            className={`w-2 h-2 rounded-full ${
-                              healthStatus === "danger"
-                                ? "bg-red-500"
-                                : healthStatus === "warning"
-                                  ? "bg-orange-500"
-                                  : "bg-green-500"
-                            }`}
-                          />
-                          {app}
-                          {healthStatus === "danger" && <AlertTriangle className="w-4 h-4 text-red-500" />}
-                          {healthStatus === "warning" && <AlertTriangle className="w-4 h-4 text-orange-500" />}
-                        </div>
-                      </td>
-                      <td className="p-3 text-center">
-                        <Badge variant="secondary" className="bg-gray-100 text-gray-700 border-gray-200">
-                          {summary.countryCount}
-                        </Badge>
-                      </td>
-                      <td className="p-3 text-right text-gray-900 font-mono font-semibold">
-                        ${summary.totalEarnings.toFixed(3)}
-                      </td>
-                      <td className="p-3 text-right text-gray-900 font-mono font-semibold">
-                        {summary.totalClicks.toFixed(1)}
-                      </td>
-                      <td className="p-3 text-right text-gray-900 font-mono font-semibold">
-                        {(summary.avgCtr * 100).toFixed(1)}%
-                      </td>
-                      <td className="p-3 text-right text-gray-900 font-mono font-semibold">
-                        {(summary.avgMatchRate * 100).toFixed(1)}%
-                      </td>
-                      <td className="p-3 text-center">
-                        <Badge
-                          className={
-                            healthStatus === "danger"
-                              ? "bg-red-100 text-red-800 border-red-200"
-                              : healthStatus === "warning"
-                                ? "bg-orange-100 text-orange-800 border-orange-200"
-                                : "bg-green-100 text-green-800 border-green-200"
-                          }
-                        >
-                          {healthStatus === "danger" ? "Critical" : healthStatus === "warning" ? "Warning" : "Healthy"}
-                        </Badge>
-                      </td>
-                      <td className="p-3 text-center">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleAppClick(app) // Use new router-based handler
-                          }}
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                      </td>
-                    </tr>
-                  )
-                })}
+                {currentApps.map((app) => (
+                  <tr key={app.appId} className="border-b border-gray-100">
+                    <td className="p-3 font-medium text-gray-900">
+                      <div>
+                        <div className="font-semibold">{app.appName}</div>
+                        <div className="text-xs text-gray-500">{app.appId}</div>
+                      </div>
+                    </td>
+                    <td className="p-3 text-right font-mono">
+                      ${app.metrics?.ESTIMATED_EARNINGS?.toFixed(3) ?? "0.000"}
+                    </td>
+                    <td className="p-3 text-right font-mono">{app.metrics?.CLICKS ?? 0}</td>
+                    <td className="p-3 text-right font-mono">{app.metrics?.IMPRESSIONS ?? 0}</td>
+                    <td className="p-3 text-right font-mono">${app.metrics?.OBSERVED_ECPM?.toFixed(2) ?? "0.00"}</td>
+                    <td className="p-3 text-right font-mono">
+                      {((app.metrics?.IMPRESSION_CTR ?? 0) * 100).toFixed(2)}%
+                    </td>
+                    <td className="p-3 text-right font-mono">{((app.metrics?.MATCH_RATE ?? 0) * 100).toFixed(2)}%</td>
+                    <td className="p-3 text-center">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                        onClick={() => router.push(`/dashboard/app-performance/${encodeURIComponent(app.appId)}`)}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
+              <div className="text-sm text-gray-600">
+                Showing {startIndex + 1} to {Math.min(endIndex, filteredApps.length)} of {filteredApps.length} apps
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Previous
+                </Button>
+                <span className="text-sm text-gray-600">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </>
