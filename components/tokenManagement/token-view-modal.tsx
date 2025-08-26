@@ -422,15 +422,24 @@ export default function TokenViewModal({ isOpen, token, onClose }: TokenViewModa
 
     console.log("🔄 Fetching daily data for each app...")
     const appDataPromises = Array.from(appMap.entries()).map(async ([appName, data]) => {
-      console.log(`🔄 Fetching daily data for app: ${appName}`)
+      // Tính toán metrics theo country cho từng app
+      const appCountryMetrics = rows
+        .filter(row => row.dimensionValues.APP?.displayLabel === appName)
+        .reduce((acc, row) => {
+          const country = row.dimensionValues.COUNTRY?.value || "Unknown"
+          if (!acc[country]) acc[country] = { country, earnings: 0, clicks: 0, impressions: 0, ctr: 0 }
+          acc[country].earnings += Number.parseInt(row.metricValues.ESTIMATED_EARNINGS?.microsValue || "0")
+          acc[country].clicks += Number.parseInt(row.metricValues.CLICKS?.integerValue || "0")
+          acc[country].impressions += Number.parseInt(row.metricValues.IMPRESSIONS?.integerValue || "0")
+          acc[country].ctr = acc[country].impressions > 0 ? acc[country].clicks / acc[country].impressions : 0
+          return acc
+        }, {} as Record<string, CountryAnalytics>)
 
       const dailyData = await fetchDailyDataFromAPI(
         data.app_id,
         currentToken.access_token || "",
         currentToken.publisher_ids?.[0] || "",
       )
-
-      console.log(`✅ Fetched ${dailyData.length} daily records for ${appName}`)
 
       return {
         app_id: data.app_id,
@@ -442,6 +451,8 @@ export default function TokenViewModal({ isOpen, token, onClose }: TokenViewModa
         average_ecpm: data.ecpm,
         average_ctr: data.impressions > 0 ? data.clicks / data.impressions : 0,
         daily_data: dailyData,
+        countries: Object.values(appCountryMetrics),
+        contry: Object.values(appCountryMetrics)[0]?.country || "Unknown",
       }
     })
 

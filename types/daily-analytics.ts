@@ -43,6 +43,7 @@ export interface AppAnalyticsSummary {
   average_ecpm: number
   average_ctr: number
   daily_data: DailyAnalyticsChart[]
+  countries: CountryAnalytics[]
 }
 
 export interface CountryAnalytics {
