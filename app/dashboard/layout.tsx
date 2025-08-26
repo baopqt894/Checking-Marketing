@@ -24,7 +24,7 @@ export default async function DashboardLayout({
         <AppSidebar />
         <SidebarInset>
           <Header />
-          {/* page main content */}
+     
           <div className='p-8'>
 
           {children}

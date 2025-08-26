@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import React, { useState, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -18,7 +18,7 @@ import {
     Pie,
     Cell,
 } from "recharts"
-import { TrendingUp, DollarSign, MousePointer, Eye, Smartphone, Globe, BarChart3 } from "lucide-react"
+import { TrendingUp, DollarSign, MousePointer, Eye, Smartphone, Globe, BarChart3, ChevronDown, ChevronRight } from "lucide-react"
 import type { AnalyticsSummary } from "@/types/daily-analytics"
 
 interface ComprehensiveAnalyticsDashboardProps {
@@ -41,6 +41,7 @@ export function ComprehensiveAnalyticsDashboard({ data, dateRange, isLoading }: 
     const [activeTab, setActiveTab] = useState<"overview" | "trends" | "apps" | "countries">("overview")
     const [selectedMetric, setSelectedMetric] = useState<string>("estimated_earnings")
     const [showAllApps, setShowAllApps] = useState(false)
+    const [expandedApps, setExpandedApps] = useState<Set<number>>(new Set());
 
     const trendData = useMemo(() => {
         if (!data.appData || data.appData.length === 0) return []
@@ -118,6 +119,18 @@ export function ComprehensiveAnalyticsDashboard({ data, dateRange, isLoading }: 
                 return metric
         }
     }
+
+    const handleExpand = (index: number) => {
+        setExpandedApps(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(index)) {
+                newSet.delete(index);
+            } else {
+                newSet.add(index);
+            }
+            return newSet;
+        });
+    };
 
     if (isLoading) {
         return (
@@ -371,6 +384,7 @@ export function ComprehensiveAnalyticsDashboard({ data, dateRange, isLoading }: 
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
+                                                <TableHead></TableHead>
                                                 <TableHead>App Name</TableHead>
                                                 <TableHead>Platform</TableHead>
                                                 <TableHead className="text-right">Earnings</TableHead>
@@ -382,22 +396,54 @@ export function ComprehensiveAnalyticsDashboard({ data, dateRange, isLoading }: 
                                         </TableHeader>
                                         <TableBody>
                                             {data.appData.map((app, index) => (
-                                                <TableRow key={index}>
-                                                    <TableCell className="font-medium">{app.app_name}</TableCell>
-                                                    <TableCell>
-                                                        <span
-                                                            className={`px-2 py-1 rounded text-xs ${app.platform === "ANDROID" ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"
-                                                                }`}
-                                                        >
-                                                            {app.platform}
-                                                        </span>
-                                                    </TableCell>
-                                                    <TableCell className="text-right">{formatCurrency(app.total_earnings / 1000000)}</TableCell>
-                                                    <TableCell className="text-right">{formatNumber(app.total_impressions)}</TableCell>
-                                                    <TableCell className="text-right">{formatNumber(app.total_clicks)}</TableCell>
-                                                    <TableCell className="text-right">{formatPercentage(app.average_ctr * 100)}</TableCell>
-                                                    <TableCell className="text-right">{formatCurrency(app.average_ecpm / 1000000)}</TableCell>
-                                                </TableRow>
+                                                <React.Fragment key={index}>
+                                                    <TableRow>
+                                                        <TableCell className="w-8">
+                                                            {Array.isArray(app.countries) && app.countries.length > 0 ? (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleExpand(index)}
+                                                                    className="focus:outline-none cursor-pointer"
+                                                                    aria-label={expandedApps.has(index) ? "Collapse" : "Expand"}
+                                                                >
+                                                                    {expandedApps.has(index) ? (
+                                                                        <ChevronDown className="h-4 w-4" />
+                                                                    ) : (
+                                                                        <ChevronRight className="h-4 w-4" />
+                                                                    )}
+                                                                </button>
+                                                            ) : null}
+                                                        </TableCell>
+                                                        <TableCell className="font-medium">{app.app_name}</TableCell>
+                                                        <TableCell>
+                                                            <span className={`px-2 py-1 rounded text-xs ${app.platform === "ANDROID" ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"}`}>{app.platform}</span>
+                                                        </TableCell>
+                                                        <TableCell className="text-right">{formatCurrency(app.total_earnings / 1000000)}</TableCell>
+                                                        <TableCell className="text-right">{formatNumber(app.total_impressions)}</TableCell>
+                                                        <TableCell className="text-right">{formatNumber(app.total_clicks)}</TableCell>
+                                                        <TableCell className="text-right">{formatPercentage(app.average_ctr * 100)}</TableCell>
+                                                        <TableCell className="text-right">{formatCurrency(app.average_ecpm / 1000000)}</TableCell>
+                                                    </TableRow>
+                                                    {/* Tree: Top 3 countries for this app, only show if expanded */}
+                                                    {expandedApps.has(index) && Array.isArray(app.countries) && app.countries.length > 0 && (
+                                                        app.countries
+                                                            .filter((country) => country && typeof country === "object" && typeof country.country === "string")
+                                                            .sort((a, b) => (b.earnings ?? 0) - (a.earnings ?? 0))
+                                                            .slice(0, 3)
+                                                            .map((country, cidx) => (
+                                                                <TableRow key={index + "-country-" + cidx} className="bg-muted">
+                                                                    <TableCell></TableCell>
+                                                                    <TableCell className="pl-8 text-xs">↳ {country.country}</TableCell>
+                                                                    <TableCell></TableCell>
+                                                                    <TableCell className="text-right text-xs">{formatCurrency((country.earnings ?? 0) / 1000000)}</TableCell>
+                                                                    <TableCell className="text-right text-xs">{formatNumber(country.impressions ?? 0)}</TableCell>
+                                                                    <TableCell className="text-right text-xs">{formatNumber(country.clicks ?? 0)}</TableCell>
+                                                                    <TableCell className="text-right text-xs">{formatPercentage((country.ctr ?? 0) * 100)}</TableCell>
+                                                                    <TableCell className="text-right text-xs">{country.clicks > 0 ? formatCurrency((country.earnings ?? 0) / country.clicks / 1000000) : "$0.00"}</TableCell>
+                                                                </TableRow>
+                                                            ))
+                                                    )}
+                                                </React.Fragment>
                                             ))}
                                         </TableBody>
                                     </Table>

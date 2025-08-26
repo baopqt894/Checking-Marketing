@@ -12,6 +12,7 @@ export function DashboardSidebar() {
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Accounts', href: '/dashboard/accounts', icon: BarChart3 },
     { name: 'Apps', href: '/dashboard/apps', icon: Smartphone },
+    { name: 'App Performance', href: '/dashboard/app-performance', icon: BarChart3 }, // cập nhật đường dẫn
   ]
 
   return (
