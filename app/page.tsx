@@ -24,7 +24,7 @@ export default function LoginPage() {
 
     if (username === "admin" && password === "admin") {
       // Redirect to dashboard
-      window.location.href = "/dashboard"
+       window.location.href = "/dashboard/app-performance"
     } else {
       alert("Invalid credentials")
     }
