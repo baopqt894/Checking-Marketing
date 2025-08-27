@@ -1,14 +1,15 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertTriangle, TrendingUp, TrendingDown, X } from 'lucide-react'
+import { AlertTriangle, TrendingUp, TrendingDown, ChevronUp, ChevronDown, Filter } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AppOverviewTable } from "./app-overview-table"
 import { MetricChart } from "./metric-chart"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
 
 interface MetricData {
   CLICKS?: number
@@ -60,6 +61,20 @@ interface AppMetricsDashboardProps {
   initialSelectedApp?: string
 }
 
+interface SortConfig {
+  key: string
+  direction: "asc" | "desc"
+}
+
+interface FilterConfig {
+  matchRate?: { operator: "above" | "below"; value: number }
+  earnings?: { operator: "above" | "below"; value: number }
+  clicks?: { operator: "above" | "below"; value: number }
+  impressions?: { operator: "above" | "below"; value: number }
+  ecpm?: { operator: "above" | "below"; value: number }
+  ctr?: { operator: "above" | "below"; value: number }
+}
+
 const getTrendArrow = (currentValue: number, previousValue: number, formatter?: (val: number) => string) => {
   if (previousValue === 0 && currentValue === 0) return null
   if (previousValue === 0) {
@@ -104,6 +119,10 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
 
   const [selectedDates, setSelectedDates] = useState<string[]>([])
   const [showComparisonModal, setShowComparisonModal] = useState(false)
+
+  const [sortConfig, setSortConfig] = useState<SortConfig | null>(null)
+  const [filterConfig, setFilterConfig] = useState<FilterConfig>({})
+  const [showFilters, setShowFilters] = useState(false)
 
   useEffect(() => {
     const fetchPublishers = async () => {
@@ -282,8 +301,7 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
     if (selectedDates.length < 2) return []
 
     const sortedDates = [...selectedDates].sort()
-    
-    // <CHANGE> Modified to handle multiple date comparison instead of just consecutive pairs
+
     if (sortedDates.length === 2) {
       // For 2 dates, show simple comparison
       const currentDate = sortedDates[1]
@@ -293,92 +311,239 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
       const previousData = dailyData.find((d) => d.date === previousDate)
 
       if (currentData && previousData) {
-        return [{
-          fromDate: previousDate,
-          toDate: currentDate,
-          metrics: {
-            ESTIMATED_EARNINGS: {
-              from: previousData.metrics?.ESTIMATED_EARNINGS ?? 0,
-              to: currentData.metrics?.ESTIMATED_EARNINGS ?? 0,
-              change: (currentData.metrics?.ESTIMATED_EARNINGS ?? 0) - (previousData.metrics?.ESTIMATED_EARNINGS ?? 0),
-              changePercent: previousData.metrics?.ESTIMATED_EARNINGS
-                ? (((currentData.metrics?.ESTIMATED_EARNINGS ?? 0) - (previousData.metrics?.ESTIMATED_EARNINGS ?? 0)) /
-                    (previousData.metrics?.ESTIMATED_EARNINGS ?? 0)) *
-                  100
-                : 0,
-            },
-            CLICKS: {
-              from: previousData.metrics?.CLICKS ?? 0,
-              to: currentData.metrics?.CLICKS ?? 0,
-              change: (currentData.metrics?.CLICKS ?? 0) - (previousData.metrics?.CLICKS ?? 0),
-              changePercent: previousData.metrics?.CLICKS
-                ? (((currentData.metrics?.CLICKS ?? 0) - (previousData.metrics?.CLICKS ?? 0)) /
-                    (previousData.metrics?.CLICKS ?? 0)) *
-                  100
-                : 0,
-            },
-            IMPRESSIONS: {
-              from: previousData.metrics?.IMPRESSIONS ?? 0,
-              to: currentData.metrics?.IMPRESSIONS ?? 0,
-              change: (currentData.metrics?.IMPRESSIONS ?? 0) - (previousData.metrics?.IMPRESSIONS ?? 0),
-              changePercent: previousData.metrics?.IMPRESSIONS
-                ? (((currentData.metrics?.IMPRESSIONS ?? 0) - (previousData.metrics?.IMPRESSIONS ?? 0)) /
-                    (previousData.metrics?.IMPRESSIONS ?? 0)) *
-                  100
-                : 0,
-            },
-            OBSERVED_ECPM: {
-              from: previousData.metrics?.OBSERVED_ECPM ?? 0,
-              to: currentData.metrics?.OBSERVED_ECPM ?? 0,
-              change: (currentData.metrics?.OBSERVED_ECPM ?? 0) - (previousData.metrics?.OBSERVED_ECPM ?? 0),
-              changePercent: previousData.metrics?.OBSERVED_ECPM
-                ? (((currentData.metrics?.OBSERVED_ECPM ?? 0) - (previousData.metrics?.OBSERVED_ECPM ?? 0)) /
-                    (previousData.metrics?.OBSERVED_ECPM ?? 0)) *
-                  100
-                : 0,
-            },
-            IMPRESSION_CTR: {
-              from: (previousData.metrics?.IMPRESSION_CTR ?? 0) * 100,
-              to: (currentData.metrics?.IMPRESSION_CTR ?? 0) * 100,
-              change:
-                (currentData.metrics?.IMPRESSION_CTR ?? 0) * 100 - (previousData.metrics?.IMPRESSION_CTR ?? 0) * 100,
-              changePercent: previousData.metrics?.IMPRESSION_CTR
-                ? (((currentData.metrics?.IMPRESSION_CTR ?? 0) - (previousData.metrics?.IMPRESSION_CTR ?? 0)) /
-                    (previousData.metrics?.IMPRESSION_CTR ?? 0)) *
-                  100
-                : 0,
-            },
-            MATCH_RATE: {
-              from: (previousData.metrics?.MATCH_RATE ?? 0) * 100,
-              to: (currentData.metrics?.MATCH_RATE ?? 0) * 100,
-              change: (currentData.metrics?.MATCH_RATE ?? 0) * 100 - (previousData.metrics?.MATCH_RATE ?? 0) * 100,
-              changePercent: previousData.metrics?.MATCH_RATE
-                ? (((currentData.metrics?.MATCH_RATE ?? 0) - (previousData.metrics?.MATCH_RATE ?? 0)) /
-                    (previousData.metrics?.MATCH_RATE ?? 0)) *
-                  100
-                : 0,
+        return [
+          {
+            fromDate: previousDate,
+            toDate: currentDate,
+            metrics: {
+              ESTIMATED_EARNINGS: {
+                from: previousData.metrics?.ESTIMATED_EARNINGS ?? 0,
+                to: currentData.metrics?.ESTIMATED_EARNINGS ?? 0,
+                change:
+                  (currentData.metrics?.ESTIMATED_EARNINGS ?? 0) - (previousData.metrics?.ESTIMATED_EARNINGS ?? 0),
+                changePercent: previousData.metrics?.ESTIMATED_EARNINGS
+                  ? (((currentData.metrics?.ESTIMATED_EARNINGS ?? 0) -
+                      (previousData.metrics?.ESTIMATED_EARNINGS ?? 0)) /
+                      (previousData.metrics?.ESTIMATED_EARNINGS ?? 0)) *
+                    100
+                  : 0,
+              },
+              CLICKS: {
+                from: previousData.metrics?.CLICKS ?? 0,
+                to: currentData.metrics?.CLICKS ?? 0,
+                change: (currentData.metrics?.CLICKS ?? 0) - (previousData.metrics?.CLICKS ?? 0),
+                changePercent: previousData.metrics?.CLICKS
+                  ? (((currentData.metrics?.CLICKS ?? 0) - (previousData.metrics?.CLICKS ?? 0)) /
+                      (previousData.metrics?.CLICKS ?? 0)) *
+                    100
+                  : 0,
+              },
+              IMPRESSIONS: {
+                from: previousData.metrics?.IMPRESSIONS ?? 0,
+                to: currentData.metrics?.IMPRESSIONS ?? 0,
+                change: (currentData.metrics?.IMPRESSIONS ?? 0) - (previousData.metrics?.IMPRESSIONS ?? 0),
+                changePercent: previousData.metrics?.IMPRESSIONS
+                  ? (((currentData.metrics?.IMPRESSIONS ?? 0) - (previousData.metrics?.IMPRESSIONS ?? 0)) /
+                      (previousData.metrics?.IMPRESSIONS ?? 0)) *
+                    100
+                  : 0,
+              },
+              OBSERVED_ECPM: {
+                from: previousData.metrics?.OBSERVED_ECPM ?? 0,
+                to: currentData.metrics?.OBSERVED_ECPM ?? 0,
+                change: (currentData.metrics?.OBSERVED_ECPM ?? 0) - (previousData.metrics?.OBSERVED_ECPM ?? 0),
+                changePercent: previousData.metrics?.OBSERVED_ECPM
+                  ? (((currentData.metrics?.OBSERVED_ECPM ?? 0) - (previousData.metrics?.OBSERVED_ECPM ?? 0)) /
+                      (previousData.metrics?.OBSERVED_ECPM ?? 0)) *
+                    100
+                  : 0,
+              },
+              IMPRESSION_CTR: {
+                from: (previousData.metrics?.IMPRESSION_CTR ?? 0) * 100,
+                to: (currentData.metrics?.IMPRESSION_CTR ?? 0) * 100,
+                change:
+                  (currentData.metrics?.IMPRESSION_CTR ?? 0) * 100 - (previousData.metrics?.IMPRESSION_CTR ?? 0) * 100,
+                changePercent: previousData.metrics?.IMPRESSION_CTR
+                  ? (((currentData.metrics?.IMPRESSION_CTR ?? 0) - (previousData.metrics?.IMPRESSION_CTR ?? 0)) /
+                      (previousData.metrics?.IMPRESSION_CTR ?? 0)) *
+                    100
+                  : 0,
+              },
+              MATCH_RATE: {
+                from: (previousData.metrics?.MATCH_RATE ?? 0) * 100,
+                to: (currentData.metrics?.MATCH_RATE ?? 0) * 100,
+                change: (currentData.metrics?.MATCH_RATE ?? 0) * 100 - (previousData.metrics?.MATCH_RATE ?? 0) * 100,
+                changePercent: previousData.metrics?.MATCH_RATE
+                  ? (((currentData.metrics?.MATCH_RATE ?? 0) - (previousData.metrics?.MATCH_RATE ?? 0)) /
+                      (previousData.metrics?.MATCH_RATE ?? 0)) *
+                    100
+                  : 0,
+              },
             },
           },
-        }]
+        ]
       }
     }
 
     // For 3+ dates, return all dates with their data for side-by-side comparison
-    return sortedDates.map(date => {
-      const data = dailyData.find((d) => d.date === date)
-      return {
-        date,
-        data: data ? {
-          ESTIMATED_EARNINGS: data.metrics?.ESTIMATED_EARNINGS ?? 0,
-          CLICKS: data.metrics?.CLICKS ?? 0,
-          IMPRESSIONS: data.metrics?.IMPRESSIONS ?? 0,
-          OBSERVED_ECPM: data.metrics?.OBSERVED_ECPM ?? 0,
-          IMPRESSION_CTR: (data.metrics?.IMPRESSION_CTR ?? 0) * 100,
-          MATCH_RATE: (data.metrics?.MATCH_RATE ?? 0) * 100,
-        } : null
-      }
-    }).filter(item => item.data !== null)
+    return sortedDates
+      .map((date) => {
+        const data = dailyData.find((d) => d.date === date)
+        return {
+          date,
+          data: data
+            ? {
+                ESTIMATED_EARNINGS: data.metrics?.ESTIMATED_EARNINGS ?? 0,
+                CLICKS: data.metrics?.CLICKS ?? 0,
+                IMPRESSIONS: data.metrics?.IMPRESSIONS ?? 0,
+                OBSERVED_ECPM: data.metrics?.OBSERVED_ECPM ?? 0,
+                IMPRESSION_CTR: (data.metrics?.IMPRESSION_CTR ?? 0) * 100,
+                MATCH_RATE: (data.metrics?.MATCH_RATE ?? 0) * 100,
+              }
+            : null,
+        }
+      })
+      .filter((item) => item.data !== null)
   }
+
+  const handleSort = (key: string) => {
+    console.log("[v0] handleSort called with key:", key)
+    console.log("[v0] Current sortConfig:", sortConfig)
+
+    if (sortConfig && sortConfig.key === key) {
+      if (sortConfig.direction === "asc") {
+        console.log("[v0] Changing to desc")
+        setSortConfig({ key, direction: "desc" })
+      } else {
+        console.log("[v0] Canceling sort")
+        // Cancel sort for this column
+        setSortConfig(null)
+      }
+    } else {
+      console.log("[v0] New column sort - asc")
+      // New column sort
+      setSortConfig({ key, direction: "asc" })
+    }
+  }
+
+  const handleFilterChange = (metric: keyof FilterConfig, operator: "above" | "below", value: number) => {
+    setFilterConfig((prev) => ({
+      ...prev,
+      [metric]: { operator, value },
+    }))
+  }
+
+  const clearFilter = (metric: keyof FilterConfig) => {
+    setFilterConfig((prev) => {
+      const newConfig = { ...prev }
+      delete newConfig[metric]
+      return newConfig
+    })
+  }
+
+  const clearAllFilters = () => {
+    setFilterConfig({})
+  }
+
+  const SortIcon = ({ column }: { column: string }) => {
+    if (!sortConfig || sortConfig.key !== column) {
+      return <ChevronUp className="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100" />
+    }
+
+    if (sortConfig.direction === "asc") {
+      return <ChevronUp className="w-3 h-3 text-blue-600" />
+    } else {
+      return <ChevronDown className="w-3 h-3 text-blue-600" />
+    }
+  }
+
+  const processedDailyData = useMemo(() => {
+    console.log("[v0] Processing data with sortConfig:", sortConfig)
+    console.log("[v0] Raw dailyData length:", dailyData.length)
+
+    let filteredData = [...dailyData]
+
+    // Apply filters
+    Object.entries(filterConfig).forEach(([key, config]) => {
+      if (config.value !== undefined && config.value !== "") {
+        const numValue = Number.parseFloat(config.value.toString())
+        if (!isNaN(numValue)) {
+          filteredData = filteredData.filter((item) => {
+            let itemValue: number
+            switch (key) {
+              case "matchRate":
+                itemValue = (item.metrics?.MATCH_RATE ?? 0) * 100
+                break
+              case "earnings":
+                itemValue = item.metrics?.ESTIMATED_EARNINGS ?? 0
+                break
+              case "ctr":
+                itemValue = (item.metrics?.IMPRESSION_CTR ?? 0) * 100
+                break
+              default:
+                return true
+            }
+            return config.operator === "above" ? itemValue > numValue : itemValue < numValue
+          })
+        }
+      }
+    })
+
+    console.log("[v0] Filtered data length:", filteredData.length)
+
+    // Apply sorting
+    if (sortConfig) {
+      console.log("[v0] Applying sort:", sortConfig)
+      filteredData.sort((a, b) => {
+        let aValue: number
+        let bValue: number
+
+        switch (sortConfig.key) {
+          case "date":
+            aValue = new Date(a.date).getTime()
+            bValue = new Date(b.date).getTime()
+            break
+          case "earnings":
+            aValue = a.metrics?.ESTIMATED_EARNINGS ?? 0
+            bValue = b.metrics?.ESTIMATED_EARNINGS ?? 0
+            break
+          case "clicks":
+            aValue = a.metrics?.CLICKS ?? 0
+            bValue = b.metrics?.CLICKS ?? 0
+            break
+          case "impressions":
+            aValue = a.metrics?.IMPRESSIONS ?? 0
+            bValue = b.metrics?.IMPRESSIONS ?? 0
+            break
+          case "ecpm":
+            aValue = a.metrics?.OBSERVED_ECPM ?? 0
+            bValue = b.metrics?.OBSERVED_ECPM ?? 0
+            break
+          case "ctr":
+            aValue = (a.metrics?.IMPRESSION_CTR ?? 0) * 100
+            bValue = (b.metrics?.IMPRESSION_CTR ?? 0) * 100
+            break
+          case "matchRate":
+            aValue = (a.metrics?.MATCH_RATE ?? 0) * 100
+            bValue = (b.metrics?.MATCH_RATE ?? 0) * 100
+            break
+          default:
+            return 0
+        }
+
+        console.log("[v0] Comparing:", aValue, "vs", bValue, "for key:", sortConfig.key)
+
+        if (sortConfig.direction === "asc") {
+          return aValue - bValue
+        } else {
+          return bValue - aValue
+        }
+      })
+    }
+
+    console.log("[v0] Final processed data length:", filteredData.length)
+    return filteredData
+  }, [dailyData, sortConfig, filterConfig])
 
   if (loading) {
     return (
@@ -465,6 +630,21 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
                   <p className="text-gray-600 mt-1">App ID: {selectedApp}</p>
                 </div>
                 <div className="flex items-center gap-3">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowFilters(!showFilters)}
+                    className={showFilters ? "bg-blue-50 border-blue-200" : ""}
+                  >
+                    <Filter className="w-4 h-4 mr-2" />
+                    Filters
+                    {Object.keys(filterConfig).length > 0 && (
+                      <span className="ml-2 bg-blue-600 text-white text-xs rounded-full px-2 py-0.5">
+                        {Object.keys(filterConfig).length}
+                      </span>
+                    )}
+                  </Button>
+
                   {selectedDates.length > 0 && (
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-gray-600">{selectedDates.length} dates selected</span>
@@ -475,7 +655,7 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
                         <Button
                           size="sm"
                           onClick={() => setShowComparisonModal(true)}
-                          className="bg-blue-200 hover:bg-blue-300"
+                          className="bg-blue-600 hover:bg-blue-700"
                         >
                           Compare Dates
                         </Button>
@@ -495,6 +675,148 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
                   </button>
                 </div>
               </div>
+
+              {showFilters && (
+                <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-sm font-medium text-gray-900">Filter Options</h4>
+                    {Object.keys(filterConfig).length > 0 && (
+                      <Button variant="outline" size="sm" onClick={clearAllFilters}>
+                        Clear All
+                      </Button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {/* Match Rate Filter */}
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium text-gray-700">Match Rate (%)</label>
+                      <div className="flex gap-2">
+                        <Select
+                          value={filterConfig.matchRate?.operator || ""}
+                          onValueChange={(value: "above" | "below") => {
+                            if (filterConfig.matchRate) {
+                              handleFilterChange("matchRate", value, filterConfig.matchRate.value)
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="w-20">
+                            <SelectValue placeholder="Op" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="above">Above</SelectItem>
+                            <SelectItem value="below">Below</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          type="number"
+                          placeholder="80"
+                          className="flex-1"
+                          value={filterConfig.matchRate?.value || ""}
+                          onChange={(e) => {
+                            const value = Number.parseFloat(e.target.value)
+                            if (!isNaN(value) && filterConfig.matchRate) {
+                              handleFilterChange("matchRate", filterConfig.matchRate.operator, value)
+                            } else if (!isNaN(value)) {
+                              handleFilterChange("matchRate", "above", value)
+                            }
+                          }}
+                        />
+                        {filterConfig.matchRate && (
+                          <Button variant="outline" size="sm" onClick={() => clearFilter("matchRate")}>
+                            ×
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Earnings Filter */}
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium text-gray-700">Earnings ($)</label>
+                      <div className="flex gap-2">
+                        <Select
+                          value={filterConfig.earnings?.operator || ""}
+                          onValueChange={(value: "above" | "below") => {
+                            if (filterConfig.earnings) {
+                              handleFilterChange("earnings", value, filterConfig.earnings.value)
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="w-20">
+                            <SelectValue placeholder="Op" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="above">Above</SelectItem>
+                            <SelectItem value="below">Below</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="0.01"
+                          className="flex-1"
+                          value={filterConfig.earnings?.value || ""}
+                          onChange={(e) => {
+                            const value = Number.parseFloat(e.target.value)
+                            if (!isNaN(value) && filterConfig.earnings) {
+                              handleFilterChange("earnings", filterConfig.earnings.operator, value)
+                            } else if (!isNaN(value)) {
+                              handleFilterChange("earnings", "above", value)
+                            }
+                          }}
+                        />
+                        {filterConfig.earnings && (
+                          <Button variant="outline" size="sm" onClick={() => clearFilter("earnings")}>
+                            ×
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* CTR Filter */}
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium text-gray-700">CTR (%)</label>
+                      <div className="flex gap-2">
+                        <Select
+                          value={filterConfig.ctr?.operator || ""}
+                          onValueChange={(value: "above" | "below") => {
+                            if (filterConfig.ctr) {
+                              handleFilterChange("ctr", value, filterConfig.ctr.value)
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="w-20">
+                            <SelectValue placeholder="Op" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="above">Above</SelectItem>
+                            <SelectItem value="below">Below</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          placeholder="5.0"
+                          className="flex-1"
+                          value={filterConfig.ctr?.value || ""}
+                          onChange={(e) => {
+                            const value = Number.parseFloat(e.target.value)
+                            if (!isNaN(value) && filterConfig.ctr) {
+                              handleFilterChange("ctr", filterConfig.ctr.operator, value)
+                            } else if (!isNaN(value)) {
+                              handleFilterChange("ctr", "above", value)
+                            }
+                          }}
+                        />
+                        {filterConfig.ctr && (
+                          <Button variant="outline" size="sm" onClick={() => clearFilter("ctr")}>
+                            ×
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="p-6">
               {dailyLoading ? (
@@ -506,8 +828,32 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
                 <div className="space-y-6">
                   <div className="bg-white border border-gray-200 rounded-lg">
                     <div className="p-4 border-b border-gray-200">
-                      <h3 className="text-lg font-medium text-gray-900">Daily Metrics Table</h3>
-                      <p className="text-sm text-gray-600 mt-1">Select dates to compare performance metrics</p>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-lg font-medium text-gray-900">Daily Metrics Table</h3>
+                          <p className="text-sm text-gray-600 mt-1">
+                            Select dates to compare performance metrics • {processedDailyData.length} of{" "}
+                            {dailyData.length} rows
+                            {sortConfig && (
+                              <span className="ml-2 text-blue-600">
+                                • Sorted by {sortConfig.key} ({sortConfig.direction})
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                        {(sortConfig || Object.keys(filterConfig).length > 0) && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSortConfig(null)
+                              setFilterConfig({})
+                            }}
+                          >
+                            Reset All
+                          </Button>
+                        )}
+                      </div>
                     </div>
                     <div className="overflow-hidden">
                       <div className="max-h-96 w-auto overflow-y-auto">
@@ -516,28 +862,85 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
                             <tr>
                               <th className="text-left py-3 px-3 text-gray-700 font-medium w-12">
                                 <Checkbox
-                                  checked={selectedDates.length === dailyData.length}
+                                  checked={selectedDates.length === processedDailyData.length}
                                   onCheckedChange={(checked) => {
                                     if (checked) {
-                                      setSelectedDates(dailyData.map((d) => d.date))
+                                      setSelectedDates(processedDailyData.map((d) => d.date))
                                     } else {
                                       setSelectedDates([])
                                     }
                                   }}
                                 />
                               </th>
-                              <th className="text-left py-3 px-3 text-gray-700 font-medium w-20">Date</th>
-                              <th className="text-right py-3 px-2 text-gray-700 font-medium">Earnings ($)</th>
-                              <th className="text-right py-3 px-2 text-gray-700 font-medium">Clicks</th>
-                              <th className="text-right py-3 px-2 text-gray-700 font-medium">Impressions</th>
-                              <th className="text-right py-3 px-2 text-gray-700 font-medium">eCPM ($)</th>
-                              <th className="text-right py-3 px-2 text-gray-700 font-medium">CTR (%)</th>
-                              <th className="text-right py-3 px-3 text-gray-700 font-medium">Match Rate (%)</th>
+                              <th
+                                className="text-left py-3 px-3 text-gray-700 font-medium w-20 cursor-pointer hover:bg-gray-100 group"
+                                onClick={() => handleSort("date")}
+                              >
+                                <div className="flex items-center gap-1">
+                                  Date
+                                  <SortIcon column="date" />
+                                </div>
+                              </th>
+                              <th
+                                className="text-right py-3 px-2 text-gray-700 font-medium cursor-pointer hover:bg-gray-100 group"
+                                onClick={() => handleSort("earnings")}
+                              >
+                                <div className="flex items-center justify-end gap-1">
+                                  Earnings ($)
+                                  <SortIcon column="earnings" />
+                                </div>
+                              </th>
+                              <th
+                                className="text-right py-3 px-2 text-gray-700 font-medium cursor-pointer hover:bg-gray-100 group"
+                                onClick={() => handleSort("clicks")}
+                              >
+                                <div className="flex items-center justify-end gap-1">
+                                  Clicks
+                                  <SortIcon column="clicks" />
+                                </div>
+                              </th>
+                              <th
+                                className="text-right py-3 px-2 text-gray-700 font-medium cursor-pointer hover:bg-gray-100 group"
+                                onClick={() => handleSort("impressions")}
+                              >
+                                <div className="flex items-center justify-end gap-1">
+                                  Impressions
+                                  <SortIcon column="impressions" />
+                                </div>
+                              </th>
+                              <th
+                                className="text-right py-3 px-2 text-gray-700 font-medium cursor-pointer hover:bg-gray-100 group"
+                                onClick={() => handleSort("ecpm")}
+                              >
+                                <div className="flex items-center justify-end gap-1">
+                                  eCPM ($)
+                                  <SortIcon column="ecpm" />
+                                </div>
+                              </th>
+                              <th
+                                className="text-right py-3 px-2 text-gray-700 font-medium cursor-pointer hover:bg-gray-100 group"
+                                onClick={() => handleSort("ctr")}
+                              >
+                                <div className="flex items-center justify-end gap-1">
+                                  CTR (%)
+                                  <SortIcon column="ctr" />
+                                </div>
+                              </th>
+                              <th
+                                className="text-right py-3 px-3 text-gray-700 font-medium cursor-pointer hover:bg-gray-100 group"
+                                onClick={() => handleSort("matchRate")}
+                              >
+                                <div className="flex items-center justify-end gap-1">
+                                  Match Rate (%)
+                                  <SortIcon column="matchRate" />
+                                </div>
+                              </th>
                             </tr>
                           </thead>
                           <tbody>
-                            {dailyData.map((day, index) => {
-                              const previousDay = index < dailyData.length - 1 ? dailyData[index + 1] : null
+                            {processedDailyData.map((day, index) => {
+                              const previousDay =
+                                index < processedDailyData.length - 1 ? processedDailyData[index + 1] : null
 
                               return (
                                 <tr key={day.date} className="border-b border-gray-100 hover:bg-gray-50">
@@ -679,7 +1082,6 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
         <Dialog open={showComparisonModal} onOpenChange={setShowComparisonModal}>
           <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-              {/* <CHANGE> Removed duplicate X button from DialogTitle */}
               <DialogTitle>Date Comparison Analysis</DialogTitle>
             </DialogHeader>
             <div className="space-y-6">
@@ -758,7 +1160,9 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
                       <div className="bg-gray-50 p-3 rounded">
                         <div className="text-sm font-medium text-gray-700">eCPM</div>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className="text-lg font-semibold">${comparison.metrics.OBSERVED_ECPM.to.toFixed(2)}</span>
+                          <span className="text-lg font-semibold">
+                            ${comparison.metrics.OBSERVED_ECPM.to.toFixed(2)}
+                          </span>
                           <div className="flex items-center gap-1">
                             {comparison.metrics.OBSERVED_ECPM.change > 0 ? (
                               <TrendingUp className="w-4 h-4 text-green-500" />
@@ -823,7 +1227,6 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
                   </div>
                 ))
               ) : (
-                // <CHANGE> Multi-date comparison (3+ dates) - side by side table
                 <div className="border border-gray-200 rounded-lg overflow-hidden">
                   <div className="bg-gray-50 p-4 border-b">
                     <h3 className="text-lg font-semibold text-gray-900">
