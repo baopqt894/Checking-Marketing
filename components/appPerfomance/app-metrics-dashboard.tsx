@@ -371,10 +371,10 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
                                 ${day.metrics?.OBSERVED_ECPM?.toFixed(2) ?? "0.00"}
                               </td>
                               <td className="p-3 text-right font-mono">
-                                {((day.metrics?.IMPRESSION_CTR ?? 0) * 10).toFixed(2)}%
+                                {((day.metrics?.IMPRESSION_CTR ?? 0) * 100).toFixed(2)}%
                               </td>
                               <td className="p-3 text-right font-mono">
-                                {((day.metrics?.MATCH_RATE ?? 0) * 1).toFixed(2)}%
+                                {((day.metrics?.MATCH_RATE ?? 0) * 100).toFixed(2)}%
                               </td>
                             </tr>
                           ))}
