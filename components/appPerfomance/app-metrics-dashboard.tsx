@@ -64,7 +64,7 @@ const getTrendArrow = (currentValue: number, previousValue: number, formatter?: 
     return (
       <div className="inline-flex items-center group relative">
         <TrendingUp className="w-3 h-3 text-green-500" />
-        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20">
+        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none">
           New: {formatter ? formatter(currentValue) : currentValue.toFixed(4)}
         </div>
       </div>
@@ -82,7 +82,7 @@ const getTrendArrow = (currentValue: number, previousValue: number, formatter?: 
   return (
     <div className="inline-flex items-center group relative">
       <Icon className={`w-3 h-3 ${isIncrease ? "text-green-500" : "text-red-500"}`} />
-      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20">
+      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none">
         {isIncrease ? "+" : ""}
         {formatter ? formatter(change) : change.toFixed(4)} ({percentChange > 0 ? "+" : ""}
         {percentChange.toFixed(1)}%)
@@ -382,108 +382,106 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
                     <div className="p-4 border-b border-gray-200">
                       <h3 className="text-lg font-medium text-gray-900">Daily Metrics Table</h3>
                     </div>
-                    <div className="max-h-96 overflow-y-auto">
-                      <table className="w-full text-sm table-fixed">
-                        <thead className="sticky top-0 bg-gray-50 border-b border-gray-200 z-10">
-                          <tr>
-                            <th className="text-left p-2 text-gray-700 font-medium w-[12%]">Date</th>
-                            <th className="text-right p-2 text-gray-700 font-medium w-[16%]">Earnings ($)</th>
-                            <th className="text-right p-2 text-gray-700 font-medium w-[12%]">Clicks</th>
-                            <th className="text-right p-2 text-gray-700 font-medium w-[14%]">Impressions</th>
-                            <th className="text-right p-2 text-gray-700 font-medium w-[14%]">eCPM ($)</th>
-                            <th className="text-right p-2 text-gray-700 font-medium w-[14%]">CTR (%)</th>
-                            <th className="text-right p-2 text-gray-700 font-medium w-[18%]">Match Rate (%)</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {dailyData.map((day, index) => {
-                            const previousDay = index < dailyData.length - 1 ? dailyData[index + 1] : null
+                    <div className="overflow-hidden">
+                      <div className="max-h-96 w-auto overflow-y-auto">
+                        <table className="w-full text-sm">
+                          <thead className="sticky top-0 bg-gray-50 border-b border-gray-200 z-10">
+                            <tr>
+                              <th className="text-left py-3 px-3 text-gray-700 font-medium w-20">Date</th>
+                              <th className="text-right py-3 px-2 text-gray-700 font-medium">Earnings ($)</th>
+                              <th className="text-right py-3 px-2 text-gray-700 font-medium">Clicks</th>
+                              <th className="text-right py-3 px-2 text-gray-700 font-medium">Impressions</th>
+                              <th className="text-right py-3 px-2 text-gray-700 font-medium">eCPM ($)</th>
+                              <th className="text-right py-3 px-2 text-gray-700 font-medium">CTR (%)</th>
+                              <th className="text-right py-3 px-3 text-gray-700 font-medium">Match Rate (%)</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {dailyData.map((day, index) => {
+                              const previousDay = index < dailyData.length - 1 ? dailyData[index + 1] : null
 
-                            return (
-                              <tr key={day.date} className="border-b border-gray-100 hover:bg-gray-50">
-                                <td className="p-2 font-medium text-gray-900 truncate">{day.date}</td>
-                                <td className="p-2 text-right font-mono">
-                                  <div className="flex items-center justify-end gap-1">
-                                    <span className="truncate">
-                                      ${day.metrics?.ESTIMATED_EARNINGS?.toFixed(4) ?? "0.0000"}
-                                    </span>
-                                    <div className="w-4 flex justify-center flex-shrink-0">
-                                      {previousDay &&
-                                        getTrendArrow(
-                                          day.metrics?.ESTIMATED_EARNINGS ?? 0,
-                                          previousDay.metrics?.ESTIMATED_EARNINGS ?? 0,
-                                          (val) => `$${val.toFixed(4)}`,
-                                        )}
+                              return (
+                                <tr key={day.date} className="border-b border-gray-100 hover:bg-gray-50">
+                                  <td className="py-2 px-3 font-medium text-gray-900">{day.date.slice(5)}</td>
+                                  <td className="py-2 px-2 text-right font-mono text-xs">
+                                    <div className="flex items-center justify-end gap-1">
+                                      <span>${day.metrics?.ESTIMATED_EARNINGS?.toFixed(4) ?? "0.0000"}</span>
+                                      <div className="w-3 flex justify-center">
+                                        {previousDay &&
+                                          getTrendArrow(
+                                            day.metrics?.ESTIMATED_EARNINGS ?? 0,
+                                            previousDay.metrics?.ESTIMATED_EARNINGS ?? 0,
+                                            (val) => `$${val.toFixed(4)}`,
+                                          )}
+                                      </div>
                                     </div>
-                                  </div>
-                                </td>
-                                <td className="p-2 text-right font-mono">
-                                  <div className="flex items-center justify-end gap-1">
-                                    <span>{day.metrics?.CLICKS ?? 0}</span>
-                                    <div className="w-4 flex justify-center flex-shrink-0">
-                                      {previousDay &&
-                                        getTrendArrow(day.metrics?.CLICKS ?? 0, previousDay.metrics?.CLICKS ?? 0)}
+                                  </td>
+                                  <td className="py-2 px-2 text-right font-mono text-xs">
+                                    <div className="flex items-center justify-end gap-1">
+                                      <span>{day.metrics?.CLICKS ?? 0}</span>
+                                      <div className="w-3 flex justify-center">
+                                        {previousDay &&
+                                          getTrendArrow(day.metrics?.CLICKS ?? 0, previousDay.metrics?.CLICKS ?? 0)}
+                                      </div>
                                     </div>
-                                  </div>
-                                </td>
-                                <td className="p-2 text-right font-mono">
-                                  <div className="flex items-center justify-end gap-1">
-                                    <span>{day.metrics?.IMPRESSIONS ?? 0}</span>
-                                    <div className="w-4 flex justify-center flex-shrink-0">
-                                      {previousDay &&
-                                        getTrendArrow(
-                                          day.metrics?.IMPRESSIONS ?? 0,
-                                          previousDay.metrics?.IMPRESSIONS ?? 0,
-                                        )}
+                                  </td>
+                                  <td className="py-2 px-2 text-right font-mono text-xs">
+                                    <div className="flex items-center justify-end gap-1">
+                                      <span>{day.metrics?.IMPRESSIONS ?? 0}</span>
+                                      <div className="w-3 flex justify-center">
+                                        {previousDay &&
+                                          getTrendArrow(
+                                            day.metrics?.IMPRESSIONS ?? 0,
+                                            previousDay.metrics?.IMPRESSIONS ?? 0,
+                                          )}
+                                      </div>
                                     </div>
-                                  </div>
-                                </td>
-                                <td className="p-2 text-right font-mono">
-                                  <div className="flex items-center justify-end gap-1">
-                                    <span className="truncate">
-                                      ${day.metrics?.OBSERVED_ECPM?.toFixed(2) ?? "0.00"}
-                                    </span>
-                                    <div className="w-4 flex justify-center flex-shrink-0">
-                                      {previousDay &&
-                                        getTrendArrow(
-                                          day.metrics?.OBSERVED_ECPM ?? 0,
-                                          previousDay.metrics?.OBSERVED_ECPM ?? 0,
-                                          (val) => `$${val.toFixed(2)}`,
-                                        )}
+                                  </td>
+                                  <td className="py-2 px-2 text-right font-mono text-xs">
+                                    <div className="flex items-center justify-end gap-1">
+                                      <span>${day.metrics?.OBSERVED_ECPM?.toFixed(2) ?? "0.00"}</span>
+                                      <div className="w-3 flex justify-center">
+                                        {previousDay &&
+                                          getTrendArrow(
+                                            day.metrics?.OBSERVED_ECPM ?? 0,
+                                            previousDay.metrics?.OBSERVED_ECPM ?? 0,
+                                            (val) => `$${val.toFixed(2)}`,
+                                          )}
+                                      </div>
                                     </div>
-                                  </div>
-                                </td>
-                                <td className="p-2 text-right font-mono">
-                                  <div className="flex items-center justify-end gap-1">
-                                    <span>{((day.metrics?.IMPRESSION_CTR ?? 0) * 100).toFixed(2)}%</span>
-                                    <div className="w-4 flex justify-center flex-shrink-0">
-                                      {previousDay &&
-                                        getTrendArrow(
-                                          (day.metrics?.IMPRESSION_CTR ?? 0) * 100,
-                                          (previousDay.metrics?.IMPRESSION_CTR ?? 0) * 100,
-                                          (val) => `${val.toFixed(2)}%`,
-                                        )}
+                                  </td>
+                                  <td className="py-2 px-2 text-right font-mono text-xs">
+                                    <div className="flex items-center justify-end gap-1">
+                                      <span>{((day.metrics?.IMPRESSION_CTR ?? 0) * 100).toFixed(2)}%</span>
+                                      <div className="w-3 flex justify-center">
+                                        {previousDay &&
+                                          getTrendArrow(
+                                            (day.metrics?.IMPRESSION_CTR ?? 0) * 100,
+                                            (previousDay.metrics?.IMPRESSION_CTR ?? 0) * 100,
+                                            (val) => `${val.toFixed(2)}%`,
+                                          )}
+                                      </div>
                                     </div>
-                                  </div>
-                                </td>
-                                <td className="p-2 text-right font-mono">
-                                  <div className="flex items-center justify-end gap-1">
-                                    <span>{((day.metrics?.MATCH_RATE ?? 0) * 100).toFixed(2)}%</span>
-                                    <div className="w-4 flex justify-center flex-shrink-0">
-                                      {previousDay &&
-                                        getTrendArrow(
-                                          (day.metrics?.MATCH_RATE ?? 0) * 100,
-                                          (previousDay.metrics?.MATCH_RATE ?? 0) * 100,
-                                          (val) => `${val.toFixed(2)}%`,
-                                        )}
+                                  </td>
+                                  <td className="py-2 px-3 text-right font-mono text-xs">
+                                    <div className="flex items-center justify-end gap-1">
+                                      <span>{((day.metrics?.MATCH_RATE ?? 0) * 100).toFixed(2)}%</span>
+                                      <div className="w-3 flex justify-center">
+                                        {previousDay &&
+                                          getTrendArrow(
+                                            (day.metrics?.MATCH_RATE ?? 0) * 100,
+                                            (previousDay.metrics?.MATCH_RATE ?? 0) * 100,
+                                            (val) => `${val.toFixed(2)}%`,
+                                          )}
+                                      </div>
                                     </div>
-                                  </div>
-                                </td>
-                              </tr>
-                            )
-                          })}
-                        </tbody>
-                      </table>
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   </div>
 

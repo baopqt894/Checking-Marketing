@@ -6,8 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Token } from "@/types/token"
-
+import type { Token } from "@/types/token"
 
 interface TokenEditModalProps {
   isOpen: boolean
@@ -25,16 +24,23 @@ interface TokenEditModalProps {
 
 export default function TokenEditModal({ isOpen, token, onClose, onSubmit }: TokenEditModalProps) {
   const [formData, setFormData] = useState({
+    access_token: "",
+    refresh_token: "",
+    email: "",
     google_client_id: "",
     google_client_secret: "",
     google_redirect_uri: "",
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     if (token) {
       setFormData({
+        access_token: token.access_token || "",
+        refresh_token: token.refresh_token || "",
+        email: token.email || "",
         google_client_id: token.google_client_id || "",
         google_client_secret: token.google_client_secret || "",
         google_redirect_uri: token.google_redirect_uri || "",
@@ -46,7 +52,6 @@ export default function TokenEditModal({ isOpen, token, onClose, onSubmit }: Tok
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
 
-    // Clear error when user types
     if (errors[name]) {
       setErrors((prev) => {
         const newErrors = { ...prev }
@@ -58,6 +63,18 @@ export default function TokenEditModal({ isOpen, token, onClose, onSubmit }: Tok
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}
+
+    if (!formData.access_token?.trim()) {
+      newErrors.access_token = "Access Token is required"
+    }
+
+    if (!formData.refresh_token?.trim()) {
+      newErrors.refresh_token = "Refresh Token is required"
+    }
+
+    if (!formData.email?.trim()) {
+      newErrors.email = "Email is required"
+    }
 
     if (!formData.google_client_id?.trim()) {
       newErrors.google_client_id = "Google Client ID is required"
@@ -77,11 +94,66 @@ export default function TokenEditModal({ isOpen, token, onClose, onSubmit }: Tok
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (validateForm() && token?.id) {
-      onSubmit(token.id, formData)
+    if (!validateForm()) return
+
+    setIsLoading(true)
+
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL || "https://checking-marketing-api.onrender.com"
+
+      const response = await fetch(`${apiUrl}tokens/save-token`, {
+        method: "POST",
+        headers: {
+          accept: "*/*",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          access_token: formData.access_token,
+          refresh_token: formData.refresh_token,
+          email: formData.email,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error("API Error:", errorData)
+
+        if (errorData.message && Array.isArray(errorData.message)) {
+          const newErrors: Record<string, string> = {}
+          errorData.message.forEach((msg: string) => {
+            if (msg.includes("access_token")) {
+              newErrors.access_token = msg
+            } else if (msg.includes("refresh_token")) {
+              newErrors.refresh_token = msg
+            } else if (msg.includes("email")) {
+              newErrors.email = msg
+            }
+          })
+          setErrors(newErrors)
+        }
+        return
+      }
+
+      const result = await response.json()
+      console.log("Token saved successfully:", result)
+
+      if (token?.id) {
+        onSubmit(token.id, {
+          google_client_id: formData.google_client_id,
+          google_client_secret: formData.google_client_secret,
+          google_redirect_uri: formData.google_redirect_uri,
+        })
+      }
+
+      onClose()
+    } catch (error) {
+      console.error("Failed to save token:", error)
+      setErrors({ general: "Failed to save token. Please try again." })
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -95,9 +167,46 @@ export default function TokenEditModal({ isOpen, token, onClose, onSubmit }: Tok
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          <div className="space-y-1">
-            <Label>Email</Label>
-            <div className="p-2 border rounded-md bg-muted/50">{token.email}</div>
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              placeholder="user@example.com"
+              value={formData.email}
+              onChange={handleChange}
+              className={errors.email ? "border-red-500" : ""}
+            />
+            {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="access_token">Access Token</Label>
+            <Input
+              id="access_token"
+              name="access_token"
+              type="password"
+              placeholder="Enter access token"
+              value={formData.access_token}
+              onChange={handleChange}
+              className={errors.access_token ? "border-red-500" : ""}
+            />
+            {errors.access_token && <p className="text-sm text-red-500">{errors.access_token}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="refresh_token">Refresh Token</Label>
+            <Input
+              id="refresh_token"
+              name="refresh_token"
+              type="password"
+              placeholder="Enter refresh token"
+              value={formData.refresh_token}
+              onChange={handleChange}
+              className={errors.refresh_token ? "border-red-500" : ""}
+            />
+            {errors.refresh_token && <p className="text-sm text-red-500">{errors.refresh_token}</p>}
           </div>
 
           <div className="space-y-2">
@@ -141,10 +250,13 @@ export default function TokenEditModal({ isOpen, token, onClose, onSubmit }: Tok
           </div>
 
           <DialogFooter className="pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
+            {errors.general && <p className="text-sm text-red-500 w-full">{errors.general}</p>}
+            <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
               Cancel
             </Button>
-            <Button type="submit">Save Changes</Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? "Saving..." : "Save Changes"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
