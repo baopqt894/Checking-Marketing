@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertTriangle } from "lucide-react"
+import { AlertTriangle, TrendingUp, TrendingDown } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AppOverviewTable } from "./app-overview-table"
 import { MetricChart } from "./metric-chart"
@@ -58,9 +58,42 @@ interface AppMetricsDashboardProps {
   initialSelectedApp?: string
 }
 
+const getTrendArrow = (currentValue: number, previousValue: number, formatter?: (val: number) => string) => {
+  if (previousValue === 0 && currentValue === 0) return null
+  if (previousValue === 0) {
+    return (
+      <div className="inline-flex items-center group relative">
+        <TrendingUp className="w-3 h-3 text-green-500" />
+        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20">
+          New: {formatter ? formatter(currentValue) : currentValue.toFixed(4)}
+        </div>
+      </div>
+    )
+  }
+
+  const change = currentValue - previousValue
+  const percentChange = (change / previousValue) * 100
+
+  if (Math.abs(change) < 0.0001) return null
+
+  const isIncrease = change > 0
+  const Icon = isIncrease ? TrendingUp : TrendingDown
+
+  return (
+    <div className="inline-flex items-center group relative">
+      <Icon className={`w-3 h-3 ${isIncrease ? "text-green-500" : "text-red-500"}`} />
+      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20">
+        {isIncrease ? "+" : ""}
+        {formatter ? formatter(change) : change.toFixed(4)} ({percentChange > 0 ? "+" : ""}
+        {percentChange.toFixed(1)}%)
+      </div>
+    </div>
+  )
+}
+
 export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardProps) {
-  const { useRouter } = require('next/navigation');
-  const router = useRouter();
+  const { useRouter } = require("next/navigation")
+  const router = useRouter()
   const [selectedPublisherId, setSelectedPublisherId] = useState<string>("")
   const [selectedApp, setSelectedApp] = useState<string | null>(initialSelectedApp || null)
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null)
@@ -71,6 +104,7 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
   const [loading, setLoading] = useState(false)
   const [dailyLoading, setDailyLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [dataReady, setDataReady] = useState(false)
 
   const [countryPage, setCountryPage] = useState(1)
 
@@ -118,6 +152,7 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
   const fetchOverviewData = async (publisherId: string) => {
     try {
       setLoading(true)
+      setDataReady(false)
       setError(null)
 
       const controller = new AbortController()
@@ -137,6 +172,7 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
         setApiData(data.apps)
         console.log("[v0] Successfully loaded", data.apps.length, "apps")
         setError(null)
+        setDataReady(true)
       } else {
         throw new Error("Invalid API response format")
       }
@@ -149,6 +185,7 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
       console.log("[v0] API connection failed:", err.message)
       setError(`API connection failed: ${err.message}`)
       setApiData([])
+      setDataReady(false)
     } finally {
       setLoading(false)
     }
@@ -252,12 +289,12 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
             </div>
           </div>
 
-          <div className="bg-gray-50 rounded-lg p-4">
+          <div className="bg-gray-100 rounded-lg p-4 border border-gray-200">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center"></div>
+              <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center animate-pulse"></div>
               <div className="space-y-2">
-                <div className="h-5 bg-gray-200 rounded w-48 animate-pulse"></div>
-                <div className="h-4 bg-gray-200 rounded w-64 animate-pulse"></div>
+                <div className="h-5 bg-gray-300 rounded w-48 animate-pulse"></div>
+                <div className="h-4 bg-gray-300 rounded w-64 animate-pulse"></div>
               </div>
             </div>
           </div>
@@ -265,8 +302,8 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
           <div className="flex items-center justify-center py-20">
             <div className="text-center">
               <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-500 mx-auto mb-4"></div>
-              <p className="text-gray-600 text-lg font-medium">Đang tải dữ liệu...</p>
-              <p className="text-gray-500 text-sm mt-1">Kết nối đến API server...</p>
+              <p className="text-gray-800 text-lg font-semibold">Đang tải dữ liệu...</p>
+              <p className="text-gray-600 text-sm mt-1">Kết nối đến API server...</p>
             </div>
           </div>
         </div>
@@ -275,20 +312,20 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
   }
 
   return (
-    <div className="min-h-screen bg-white">
+                          <table className="w-full text-sm table-fixed">
       <div className="max-w-7xl mx-auto p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">App Performance Monitor</h1>
-              <p className="text-gray-600 mt-1">
+              <p className="text-gray-700 mt-1">
                 {selectedApp ? "30-day performance data for selected app" : "Today's app metrics overview"}
               </p>
             </div>
             <div className="flex items-center gap-3">
-              <label className="text-sm font-medium text-gray-700">Publisher:</label>
+              <label className="text-sm font-semibold text-gray-800">Publisher:</label>
               <Select value={selectedPublisherId} onValueChange={handlePublisherChange}>
-                <SelectTrigger className="w-64 bg-white border-gray-300">
+                <SelectTrigger className="w-64 bg-white border-gray-300 focus:border-blue-500">
                   <SelectValue placeholder="Select publisher" />
                 </SelectTrigger>
                 <SelectContent className="bg-white border-gray-200">
@@ -296,7 +333,7 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
                     <SelectItem key={publisher.id} value={publisher.id} className="hover:bg-gray-50">
                       <div className="flex flex-col">
                         <span className="font-medium text-gray-900">{publisher.name}</span>
-                        <span className="text-xs text-gray-500">{publisher.id}</span>
+                        <span className="text-xs text-gray-600">{publisher.id}</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -314,7 +351,7 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
         )}
 
         {selectedApp && dailyData.length > 0 ? (
-          <div className="bg-white rounded-lg border border-gray-200">
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <div>
@@ -323,11 +360,11 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
                 </div>
                 <button
                   onClick={() => {
-                    setSelectedApp(null);
-                    setDailyData([]);
-                    router.push('/dashboard/app-performance');
+                    setSelectedApp(null)
+                    setDailyData([])
+                    router.push("/dashboard/app-performance")
                   }}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                  className="px-4 py-2 text-sm font-medium text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200"
                 >
                   Back to Overview
                 </button>
@@ -345,39 +382,106 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
                     <div className="p-4 border-b border-gray-200">
                       <h3 className="text-lg font-medium text-gray-900">Daily Metrics Table</h3>
                     </div>
-                    <div style={{ maxHeight: "500px", overflowY: "auto" }} className="overflow-x-auto">
-                      <table className="w-full text-sm">
+                    <div className="max-h-96 overflow-y-auto">
+                      <table className="w-full text-sm table-fixed">
                         <thead className="sticky top-0 bg-gray-50 border-b border-gray-200 z-10">
                           <tr>
-                            <th className="text-left p-3 text-gray-700 font-medium">Date</th>
-                            <th className="text-right p-3 text-gray-700 font-medium">Earnings ($)</th>
-                            <th className="text-right p-3 text-gray-700 font-medium">Clicks</th>
-                            <th className="text-right p-3 text-gray-700 font-medium">Impressions</th>
-                            <th className="text-right p-3 text-gray-700 font-medium">eCPM ($)</th>
-                            <th className="text-right p-3 text-gray-700 font-medium">CTR (%)</th>
-                            <th className="text-right p-3 text-gray-700 font-medium">Match Rate (%)</th>
+                            <th className="text-left p-2 text-gray-700 font-medium w-[12%]">Date</th>
+                            <th className="text-right p-2 text-gray-700 font-medium w-[16%]">Earnings ($)</th>
+                            <th className="text-right p-2 text-gray-700 font-medium w-[12%]">Clicks</th>
+                            <th className="text-right p-2 text-gray-700 font-medium w-[14%]">Impressions</th>
+                            <th className="text-right p-2 text-gray-700 font-medium w-[14%]">eCPM ($)</th>
+                            <th className="text-right p-2 text-gray-700 font-medium w-[14%]">CTR (%)</th>
+                            <th className="text-right p-2 text-gray-700 font-medium w-[18%]">Match Rate (%)</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {dailyData.map((day) => (
-                            <tr key={day.date} className="border-b border-gray-100 hover:bg-gray-50">
-                              <td className="p-3 font-medium text-gray-900">{day.date}</td>
-                              <td className="p-3 text-right font-mono">
-                                ${day.metrics?.ESTIMATED_EARNINGS?.toFixed(4) ?? "0.0000"}
-                              </td>
-                              <td className="p-3 text-right font-mono">{day.metrics?.CLICKS ?? 0}</td>
-                              <td className="p-3 text-right font-mono">{day.metrics?.IMPRESSIONS ?? 0}</td>
-                              <td className="p-3 text-right font-mono">
-                                ${day.metrics?.OBSERVED_ECPM?.toFixed(2) ?? "0.00"}
-                              </td>
-                              <td className="p-3 text-right font-mono">
-                                {((day.metrics?.IMPRESSION_CTR ?? 0) * 100).toFixed(2)}%
-                              </td>
-                              <td className="p-3 text-right font-mono">
-                                {((day.metrics?.MATCH_RATE ?? 0) * 100).toFixed(2)}%
-                              </td>
-                            </tr>
-                          ))}
+                          {dailyData.map((day, index) => {
+                            const previousDay = index < dailyData.length - 1 ? dailyData[index + 1] : null
+
+                            return (
+                              <tr key={day.date} className="border-b border-gray-100 hover:bg-gray-50">
+                                <td className="p-2 font-medium text-gray-900 truncate">{day.date}</td>
+                                <td className="p-2 text-right font-mono">
+                                  <div className="flex items-center justify-end gap-1">
+                                    <span className="truncate">
+                                      ${day.metrics?.ESTIMATED_EARNINGS?.toFixed(4) ?? "0.0000"}
+                                    </span>
+                                    <div className="w-4 flex justify-center flex-shrink-0">
+                                      {previousDay &&
+                                        getTrendArrow(
+                                          day.metrics?.ESTIMATED_EARNINGS ?? 0,
+                                          previousDay.metrics?.ESTIMATED_EARNINGS ?? 0,
+                                          (val) => `$${val.toFixed(4)}`,
+                                        )}
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="p-2 text-right font-mono">
+                                  <div className="flex items-center justify-end gap-1">
+                                    <span>{day.metrics?.CLICKS ?? 0}</span>
+                                    <div className="w-4 flex justify-center flex-shrink-0">
+                                      {previousDay &&
+                                        getTrendArrow(day.metrics?.CLICKS ?? 0, previousDay.metrics?.CLICKS ?? 0)}
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="p-2 text-right font-mono">
+                                  <div className="flex items-center justify-end gap-1">
+                                    <span>{day.metrics?.IMPRESSIONS ?? 0}</span>
+                                    <div className="w-4 flex justify-center flex-shrink-0">
+                                      {previousDay &&
+                                        getTrendArrow(
+                                          day.metrics?.IMPRESSIONS ?? 0,
+                                          previousDay.metrics?.IMPRESSIONS ?? 0,
+                                        )}
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="p-2 text-right font-mono">
+                                  <div className="flex items-center justify-end gap-1">
+                                    <span className="truncate">
+                                      ${day.metrics?.OBSERVED_ECPM?.toFixed(2) ?? "0.00"}
+                                    </span>
+                                    <div className="w-4 flex justify-center flex-shrink-0">
+                                      {previousDay &&
+                                        getTrendArrow(
+                                          day.metrics?.OBSERVED_ECPM ?? 0,
+                                          previousDay.metrics?.OBSERVED_ECPM ?? 0,
+                                          (val) => `$${val.toFixed(2)}`,
+                                        )}
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="p-2 text-right font-mono">
+                                  <div className="flex items-center justify-end gap-1">
+                                    <span>{((day.metrics?.IMPRESSION_CTR ?? 0) * 100).toFixed(2)}%</span>
+                                    <div className="w-4 flex justify-center flex-shrink-0">
+                                      {previousDay &&
+                                        getTrendArrow(
+                                          (day.metrics?.IMPRESSION_CTR ?? 0) * 100,
+                                          (previousDay.metrics?.IMPRESSION_CTR ?? 0) * 100,
+                                          (val) => `${val.toFixed(2)}%`,
+                                        )}
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="p-2 text-right font-mono">
+                                  <div className="flex items-center justify-end gap-1">
+                                    <span>{((day.metrics?.MATCH_RATE ?? 0) * 100).toFixed(2)}%</span>
+                                    <div className="w-4 flex justify-center flex-shrink-0">
+                                      {previousDay &&
+                                        getTrendArrow(
+                                          (day.metrics?.MATCH_RATE ?? 0) * 100,
+                                          (previousDay.metrics?.MATCH_RATE ?? 0) * 100,
+                                          (val) => `${val.toFixed(2)}%`,
+                                        )}
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            )
+                          })}
                         </tbody>
                       </table>
                     </div>
@@ -422,9 +526,11 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
             </div>
           </div>
         ) : (
-          <div className="bg-white rounded-lg border border-gray-200">
-            <AppOverviewTable apiData={apiData} onSelectApp={setSelectedApp} />
-          </div>
+          dataReady && (
+            <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+              <AppOverviewTable apiData={apiData} onSelectApp={setSelectedApp} />
+            </div>
+          )
         )}
       </div>
     </div>
