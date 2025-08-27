@@ -8,6 +8,8 @@ interface DailyMetric {
   IMPRESSION_CTR?: number
   MATCH_RATE?: number
   OBSERVED_ECPM?: number
+  AD_REQUESTS?: number
+  MATCHED_REQUESTS?: number
 }
 
 interface MetricOption {
@@ -34,18 +36,44 @@ interface MetricChartProps {
 }
 
 const METRIC_COLORS = [
-  "#3b82f6", // blue
-  "#ef4444", // red
-  "#10b981", // green
-  "#f59e0b", // amber
-  "#8b5cf6", // violet
-  "#06b6d4", // cyan
+  "#f59e0b", // amber-500
+  "#d97706", // amber-600
+  "#b45309", // amber-700
+  "#92400e", // amber-800
+  "#78350f", // amber-900
+  "#fbbf24", // amber-400
+  "#3b82f6", // blue-500 (AD_REQUESTS)
+  "#10b981", // green-500 (MATCHED_REQUESTS)
 ]
+
+// Map metric key to color for consistency
+const METRIC_COLOR_MAP: Record<string, string> = {
+  CLICKS: "#f59e0b",
+  ESTIMATED_EARNINGS: "#d97706",
+  IMPRESSIONS: "#b45309",
+  IMPRESSION_CTR: "#92400e",
+  MATCH_RATE: "#78350f",
+  OBSERVED_ECPM: "#fbbf24",
+  AD_REQUESTS: "#3b82f6",
+  MATCHED_REQUESTS: "#10b981",
+};
+
+// Add default metricOptions for new metrics if not provided
+const DEFAULT_METRIC_OPTIONS: MetricOption[] = [
+  { value: "CLICKS", label: "Clicks", format: (val) => val.toLocaleString() },
+  { value: "ESTIMATED_EARNINGS", label: "Earnings", format: (val) => `$${val.toFixed(2)}` },
+  { value: "IMPRESSIONS", label: "Impressions", format: (val) => val.toLocaleString() },
+  { value: "IMPRESSION_CTR", label: "Impression CTR", format: (val) => `${(val * 100).toFixed(2)}%` },
+  { value: "MATCH_RATE", label: "Match Rate", format: (val) => `${(val * 100).toFixed(2)}%` },
+  { value: "OBSERVED_ECPM", label: "eCPM", format: (val) => `$${val.toFixed(2)}` },
+  { value: "AD_REQUESTS", label: "Ad Requests", format: (val) => val.toLocaleString() },
+  { value: "MATCHED_REQUESTS", label: "Matched Requests", format: (val) => val.toLocaleString() },
+];
 
 export function MetricChart({
   data,
   selectedMetrics,
-  metricOptions,
+  metricOptions = DEFAULT_METRIC_OPTIONS,
   title = "Metrics Over Time",
   selectedMetric,
   metricFormatter,
@@ -53,39 +81,48 @@ export function MetricChart({
 }: MetricChartProps) {
   const metricsToShow = (() => {
     if (selectedMetrics && selectedMetrics.length > 0) {
-      // Check if it's MetricConfig[] (from app-metrics-dashboard)
       if (typeof selectedMetrics[0] === "object" && "key" in selectedMetrics[0]) {
-        return selectedMetrics as MetricConfig[]
+        // Ensure color is set by key
+        return (selectedMetrics as MetricConfig[]).map((metric) => ({
+          ...metric,
+          color: METRIC_COLOR_MAP[metric.key] || METRIC_COLORS[0],
+        }))
       }
-
-      // Handle string[] with metricOptions (from country-analytics-dashboard)
       if (metricOptions) {
-        return (selectedMetrics as string[]).map((metricValue, index) => {
+        return (selectedMetrics as string[]).map((metricValue) => {
           const option = metricOptions.find((opt) => opt.value === metricValue)
           return {
             key: metricValue,
             label: option?.label || metricValue,
             format: option?.format || ((val: number) => val.toString()),
-            color: METRIC_COLORS[index % METRIC_COLORS.length],
+            color: METRIC_COLOR_MAP[metricValue] || METRIC_COLORS[0],
           }
         })
       }
     }
-
-    // Fallback to single metric mode
     if (selectedMetric) {
       return [
         {
           key: selectedMetric,
           label: metricLabel || selectedMetric,
           format: metricFormatter || ((val: number) => val.toString()),
-          color: METRIC_COLORS[0],
+          color: METRIC_COLOR_MAP[selectedMetric] || METRIC_COLORS[0],
         },
       ]
     }
-
     return []
   })()
+
+  console.log("[v0] MetricChart data:", data)
+  console.log("[v0] MetricChart selectedMetrics:", selectedMetrics)
+  console.log("[v0] MetricChart metricsToShow:", metricsToShow)
+
+  if (data.length > 0 && metricsToShow.length > 0) {
+    const sampleDataPoint = data[0]
+    metricsToShow.forEach((metric) => {
+      console.log(`[v0] Sample data for ${metric.key}:`, sampleDataPoint[metric.key as keyof DailyMetric])
+    })
+  }
 
   return (
     <div className="h-96">

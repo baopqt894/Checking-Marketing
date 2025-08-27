@@ -18,6 +18,8 @@ interface MetricData {
   IMPRESSION_CTR?: number
   MATCH_RATE?: number
   OBSERVED_ECPM?: number
+  AD_REQUESTS?: number
+  MATCHED_REQUESTS?: number
 }
 
 interface AppCountryData {
@@ -30,6 +32,8 @@ interface AppCountryData {
     OBSERVED_ECPM: number
     IMPRESSION_CTR: number
     MATCH_RATE: number
+    AD_REQUESTS: number
+    MATCHED_REQUESTS: number
   }
 }
 
@@ -48,13 +52,9 @@ interface DailyMetric {
     IMPRESSION_CTR?: number
     MATCH_RATE?: number
     OBSERVED_ECPM?: number
+    AD_REQUESTS?: number
+    MATCHED_REQUESTS?: number
   }
-}
-
-interface App30DayResponse {
-  appId: string
-  appName: string
-  metrics: DailyMetric[]
 }
 
 interface AppMetricsDashboardProps {
@@ -73,6 +73,10 @@ interface FilterConfig {
   impressions?: { operator: "above" | "below"; value: number }
   ecpm?: { operator: "above" | "below"; value: number }
   ctr?: { operator: "above" | "below"; value: number }
+}
+
+interface App30DayResponse {
+  metrics: DailyMetric[]
 }
 
 const getTrendArrow = (currentValue: number, previousValue: number, formatter?: (val: number) => string) => {
@@ -265,6 +269,18 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
       format: (val: number) => `${(val * 100).toFixed(1)}%`,
       color: "#06b6d4",
     },
+    {
+      value: "AD_REQUESTS",
+      label: "Ad Requests",
+      format: (val: number) => val.toFixed(0),
+      color: "#6b7280",
+    },
+    {
+      value: "MATCHED_REQUESTS",
+      label: "Matched Requests",
+      format: (val: number) => val.toFixed(0),
+      color: "#9ca3af",
+    },
   ]
 
   const getSelectedMetricConfigs = () => {
@@ -287,6 +303,8 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
     IMPRESSION_CTR: day.metrics?.IMPRESSION_CTR || 0,
     MATCH_RATE: day.metrics?.MATCH_RATE || 0,
     OBSERVED_ECPM: day.metrics?.OBSERVED_ECPM || 0,
+    AD_REQUESTS: day.metrics?.AD_REQUESTS || 0,
+    MATCHED_REQUESTS: day.metrics?.MATCHED_REQUESTS || 0,
   }))
 
   const handleDateSelection = (date: string, checked: boolean) => {
@@ -572,7 +590,7 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
 
           <div className="flex items-center justify-center py-20">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-500 mx-auto mb-4"></div>
+              <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-amber-500 mx-auto mb-4"></div>
               <p className="text-gray-800 text-lg font-semibold">Đang tải dữ liệu...</p>
               <p className="text-gray-600 text-sm mt-1">Kết nối đến API server...</p>
             </div>
@@ -596,7 +614,7 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
             <div className="flex items-center gap-3">
               <label className="text-sm font-semibold text-gray-800">Publisher:</label>
               <Select value={selectedPublisherId} onValueChange={handlePublisherChange}>
-                <SelectTrigger className="w-64 bg-white border-gray-300 focus:border-blue-500">
+                <SelectTrigger className="w-64 bg-white border-gray-300 focus:border-amber-500">
                   <SelectValue placeholder="Select publisher" />
                 </SelectTrigger>
                 <SelectContent className="bg-white border-gray-200">
@@ -634,12 +652,12 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
                     variant="outline"
                     size="sm"
                     onClick={() => setShowFilters(!showFilters)}
-                    className={showFilters ? "bg-blue-50 border-blue-200" : ""}
+                    className={showFilters ? "bg-amber-50 border-amber-200" : ""}
                   >
                     <Filter className="w-4 h-4 mr-2" />
                     Filters
                     {Object.keys(filterConfig).length > 0 && (
-                      <span className="ml-2 bg-blue-600 text-white text-xs rounded-full px-2 py-0.5">
+                      <span className="ml-2 bg-amber-600 text-white text-xs rounded-full px-2 py-0.5">
                         {Object.keys(filterConfig).length}
                       </span>
                     )}
@@ -655,7 +673,7 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
                         <Button
                           size="sm"
                           onClick={() => setShowComparisonModal(true)}
-                          className="bg-blue-600 hover:bg-blue-700"
+                          className="bg-amber-600 hover:bg-amber-700"
                         >
                           Compare Dates
                         </Button>
@@ -669,7 +687,7 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
                       setSelectedDates([])
                       router.push("/dashboard/app-performance")
                     }}
-                    className="px-4 py-2 text-sm font-medium text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200"
+                    className="px-4 py-2 text-sm font-medium text-amber-700 bg-amber-100 rounded-md hover:bg-amber-200"
                   >
                     Back to Overview
                   </button>
@@ -935,6 +953,24 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
                                   <SortIcon column="matchRate" />
                                 </div>
                               </th>
+                              <th
+                                className="text-right py-3 px-3 text-gray-700 font-medium cursor-pointer hover:bg-gray-100 group"
+                                onClick={() => handleSort("adRequests")}
+                              >
+                                <div className="flex items-center justify-end gap-1">
+                                  Ad Requests
+                                  <SortIcon column="adRequests" />
+                                </div>
+                              </th>
+                              <th
+                                className="text-right py-3 px-3 text-gray-700 font-medium cursor-pointer hover:bg-gray-100 group0"
+                                onClick={() => handleSort("matchedRequests")}
+                              >
+                                <div className="flex items-center justify-end gap-1">
+                                  Matched Requests
+                                  <SortIcon column="matchedRequests" />
+                                </div>
+                              </th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1020,6 +1056,30 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
                                             (day.metrics?.MATCH_RATE ?? 0) * 100,
                                             (previousDay.metrics?.MATCH_RATE ?? 0) * 100,
                                             (val) => `${val.toFixed(2)}%`,
+                                          )}
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="py-2 px-2 text-right font-mono text-xs">
+                                    <div className="flex items-center justify-end gap-1">
+                                      <span>{day.metrics?.AD_REQUESTS ?? 0}</span>
+                                      <div className="w-3 flex justify-center">
+                                        {previousDay &&
+                                          getTrendArrow(
+                                            day.metrics?.AD_REQUESTS ?? 0,
+                                            previousDay.metrics?.AD_REQUESTS ?? 0,
+                                          )}
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="py-2 px-2 text-right font-mono text-xs">
+                                    <div className="flex items-center justify-end gap-1">
+                                      <span>{day.metrics?.MATCHED_REQUESTS ?? 0}</span>
+                                      <div className="w-3 flex justify-center">
+                                        {previousDay &&
+                                          getTrendArrow(
+                                            day.metrics?.MATCHED_REQUESTS ?? 0,
+                                            previousDay.metrics?.MATCHED_REQUESTS ?? 0,
                                           )}
                                       </div>
                                     </div>
