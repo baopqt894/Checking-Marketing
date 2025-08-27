@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from "react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertTriangle, TrendingUp, TrendingDown } from "lucide-react"
+import { AlertTriangle, TrendingUp, TrendingDown, X } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AppOverviewTable } from "./app-overview-table"
 import { MetricChart } from "./metric-chart"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 interface MetricData {
   CLICKS?: number
@@ -62,32 +64,22 @@ const getTrendArrow = (currentValue: number, previousValue: number, formatter?: 
   if (previousValue === 0 && currentValue === 0) return null
   if (previousValue === 0) {
     return (
-      <div className="inline-flex items-center group relative">
+      <span className="inline-flex items-center">
         <TrendingUp className="w-3 h-3 text-green-500" />
-        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none">
-          New: {formatter ? formatter(currentValue) : currentValue.toFixed(4)}
-        </div>
-      </div>
+      </span>
     )
   }
 
   const change = currentValue - previousValue
-  const percentChange = (change / previousValue) * 100
-
   if (Math.abs(change) < 0.0001) return null
 
   const isIncrease = change > 0
   const Icon = isIncrease ? TrendingUp : TrendingDown
 
   return (
-    <div className="inline-flex items-center group relative">
+    <span className="inline-flex items-center">
       <Icon className={`w-3 h-3 ${isIncrease ? "text-green-500" : "text-red-500"}`} />
-      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none">
-        {isIncrease ? "+" : ""}
-        {formatter ? formatter(change) : change.toFixed(4)} ({percentChange > 0 ? "+" : ""}
-        {percentChange.toFixed(1)}%)
-      </div>
-    </div>
+    </span>
   )
 }
 
@@ -109,6 +101,9 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
   const [countryPage, setCountryPage] = useState(1)
 
   const [availablePublishers, setAvailablePublishers] = useState<{ id: string; name: string }[]>([])
+
+  const [selectedDates, setSelectedDates] = useState<string[]>([])
+  const [showComparisonModal, setShowComparisonModal] = useState(false)
 
   useEffect(() => {
     const fetchPublishers = async () => {
@@ -224,6 +219,7 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
     setSelectedApp(null)
     setSelectedCountry(null)
     setDailyData([])
+    setSelectedDates([])
   }
 
   const apps = [...new Set(apiData.map((item) => item.appId))]
@@ -273,6 +269,116 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
     MATCH_RATE: day.metrics?.MATCH_RATE || 0,
     OBSERVED_ECPM: day.metrics?.OBSERVED_ECPM || 0,
   }))
+
+  const handleDateSelection = (date: string, checked: boolean) => {
+    if (checked) {
+      setSelectedDates([...selectedDates, date])
+    } else {
+      setSelectedDates(selectedDates.filter((d) => d !== date))
+    }
+  }
+
+  const getDateComparison = () => {
+    if (selectedDates.length < 2) return []
+
+    const sortedDates = [...selectedDates].sort()
+    
+    // <CHANGE> Modified to handle multiple date comparison instead of just consecutive pairs
+    if (sortedDates.length === 2) {
+      // For 2 dates, show simple comparison
+      const currentDate = sortedDates[1]
+      const previousDate = sortedDates[0]
+
+      const currentData = dailyData.find((d) => d.date === currentDate)
+      const previousData = dailyData.find((d) => d.date === previousDate)
+
+      if (currentData && previousData) {
+        return [{
+          fromDate: previousDate,
+          toDate: currentDate,
+          metrics: {
+            ESTIMATED_EARNINGS: {
+              from: previousData.metrics?.ESTIMATED_EARNINGS ?? 0,
+              to: currentData.metrics?.ESTIMATED_EARNINGS ?? 0,
+              change: (currentData.metrics?.ESTIMATED_EARNINGS ?? 0) - (previousData.metrics?.ESTIMATED_EARNINGS ?? 0),
+              changePercent: previousData.metrics?.ESTIMATED_EARNINGS
+                ? (((currentData.metrics?.ESTIMATED_EARNINGS ?? 0) - (previousData.metrics?.ESTIMATED_EARNINGS ?? 0)) /
+                    (previousData.metrics?.ESTIMATED_EARNINGS ?? 0)) *
+                  100
+                : 0,
+            },
+            CLICKS: {
+              from: previousData.metrics?.CLICKS ?? 0,
+              to: currentData.metrics?.CLICKS ?? 0,
+              change: (currentData.metrics?.CLICKS ?? 0) - (previousData.metrics?.CLICKS ?? 0),
+              changePercent: previousData.metrics?.CLICKS
+                ? (((currentData.metrics?.CLICKS ?? 0) - (previousData.metrics?.CLICKS ?? 0)) /
+                    (previousData.metrics?.CLICKS ?? 0)) *
+                  100
+                : 0,
+            },
+            IMPRESSIONS: {
+              from: previousData.metrics?.IMPRESSIONS ?? 0,
+              to: currentData.metrics?.IMPRESSIONS ?? 0,
+              change: (currentData.metrics?.IMPRESSIONS ?? 0) - (previousData.metrics?.IMPRESSIONS ?? 0),
+              changePercent: previousData.metrics?.IMPRESSIONS
+                ? (((currentData.metrics?.IMPRESSIONS ?? 0) - (previousData.metrics?.IMPRESSIONS ?? 0)) /
+                    (previousData.metrics?.IMPRESSIONS ?? 0)) *
+                  100
+                : 0,
+            },
+            OBSERVED_ECPM: {
+              from: previousData.metrics?.OBSERVED_ECPM ?? 0,
+              to: currentData.metrics?.OBSERVED_ECPM ?? 0,
+              change: (currentData.metrics?.OBSERVED_ECPM ?? 0) - (previousData.metrics?.OBSERVED_ECPM ?? 0),
+              changePercent: previousData.metrics?.OBSERVED_ECPM
+                ? (((currentData.metrics?.OBSERVED_ECPM ?? 0) - (previousData.metrics?.OBSERVED_ECPM ?? 0)) /
+                    (previousData.metrics?.OBSERVED_ECPM ?? 0)) *
+                  100
+                : 0,
+            },
+            IMPRESSION_CTR: {
+              from: (previousData.metrics?.IMPRESSION_CTR ?? 0) * 100,
+              to: (currentData.metrics?.IMPRESSION_CTR ?? 0) * 100,
+              change:
+                (currentData.metrics?.IMPRESSION_CTR ?? 0) * 100 - (previousData.metrics?.IMPRESSION_CTR ?? 0) * 100,
+              changePercent: previousData.metrics?.IMPRESSION_CTR
+                ? (((currentData.metrics?.IMPRESSION_CTR ?? 0) - (previousData.metrics?.IMPRESSION_CTR ?? 0)) /
+                    (previousData.metrics?.IMPRESSION_CTR ?? 0)) *
+                  100
+                : 0,
+            },
+            MATCH_RATE: {
+              from: (previousData.metrics?.MATCH_RATE ?? 0) * 100,
+              to: (currentData.metrics?.MATCH_RATE ?? 0) * 100,
+              change: (currentData.metrics?.MATCH_RATE ?? 0) * 100 - (previousData.metrics?.MATCH_RATE ?? 0) * 100,
+              changePercent: previousData.metrics?.MATCH_RATE
+                ? (((currentData.metrics?.MATCH_RATE ?? 0) - (previousData.metrics?.MATCH_RATE ?? 0)) /
+                    (previousData.metrics?.MATCH_RATE ?? 0)) *
+                  100
+                : 0,
+            },
+          },
+        }]
+      }
+    }
+
+    // For 3+ dates, return all dates with their data for side-by-side comparison
+    return sortedDates.map(date => {
+      const data = dailyData.find((d) => d.date === date)
+      return {
+        date,
+        data: data ? {
+          ESTIMATED_EARNINGS: data.metrics?.ESTIMATED_EARNINGS ?? 0,
+          CLICKS: data.metrics?.CLICKS ?? 0,
+          IMPRESSIONS: data.metrics?.IMPRESSIONS ?? 0,
+          OBSERVED_ECPM: data.metrics?.OBSERVED_ECPM ?? 0,
+          IMPRESSION_CTR: (data.metrics?.IMPRESSION_CTR ?? 0) * 100,
+          MATCH_RATE: (data.metrics?.MATCH_RATE ?? 0) * 100,
+        } : null
+      }
+    }).filter(item => item.data !== null)
+  }
 
   if (loading) {
     return (
@@ -358,16 +464,36 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
                   <h2 className="text-xl font-semibold text-gray-900">30-Day Performance Data</h2>
                   <p className="text-gray-600 mt-1">App ID: {selectedApp}</p>
                 </div>
-                <button
-                  onClick={() => {
-                    setSelectedApp(null)
-                    setDailyData([])
-                    router.push("/dashboard/app-performance")
-                  }}
-                  className="px-4 py-2 text-sm font-medium text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200"
-                >
-                  Back to Overview
-                </button>
+                <div className="flex items-center gap-3">
+                  {selectedDates.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-600">{selectedDates.length} dates selected</span>
+                      <Button variant="outline" size="sm" onClick={() => setSelectedDates([])}>
+                        Clear
+                      </Button>
+                      {selectedDates.length >= 2 && (
+                        <Button
+                          size="sm"
+                          onClick={() => setShowComparisonModal(true)}
+                          className="bg-blue-200 hover:bg-blue-300"
+                        >
+                          Compare Dates
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                  <button
+                    onClick={() => {
+                      setSelectedApp(null)
+                      setDailyData([])
+                      setSelectedDates([])
+                      router.push("/dashboard/app-performance")
+                    }}
+                    className="px-4 py-2 text-sm font-medium text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200"
+                  >
+                    Back to Overview
+                  </button>
+                </div>
               </div>
             </div>
             <div className="p-6">
@@ -381,12 +507,25 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
                   <div className="bg-white border border-gray-200 rounded-lg">
                     <div className="p-4 border-b border-gray-200">
                       <h3 className="text-lg font-medium text-gray-900">Daily Metrics Table</h3>
+                      <p className="text-sm text-gray-600 mt-1">Select dates to compare performance metrics</p>
                     </div>
                     <div className="overflow-hidden">
                       <div className="max-h-96 w-auto overflow-y-auto">
                         <table className="w-full text-sm">
                           <thead className="sticky top-0 bg-gray-50 border-b border-gray-200 z-10">
                             <tr>
+                              <th className="text-left py-3 px-3 text-gray-700 font-medium w-12">
+                                <Checkbox
+                                  checked={selectedDates.length === dailyData.length}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setSelectedDates(dailyData.map((d) => d.date))
+                                    } else {
+                                      setSelectedDates([])
+                                    }
+                                  }}
+                                />
+                              </th>
                               <th className="text-left py-3 px-3 text-gray-700 font-medium w-20">Date</th>
                               <th className="text-right py-3 px-2 text-gray-700 font-medium">Earnings ($)</th>
                               <th className="text-right py-3 px-2 text-gray-700 font-medium">Clicks</th>
@@ -402,6 +541,12 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
 
                               return (
                                 <tr key={day.date} className="border-b border-gray-100 hover:bg-gray-50">
+                                  <td className="py-2 px-3">
+                                    <Checkbox
+                                      checked={selectedDates.includes(day.date)}
+                                      onCheckedChange={(checked) => handleDateSelection(day.date, checked as boolean)}
+                                    />
+                                  </td>
                                   <td className="py-2 px-3 font-medium text-gray-900">{day.date.slice(5)}</td>
                                   <td className="py-2 px-2 text-right font-mono text-xs">
                                     <div className="flex items-center justify-end gap-1">
@@ -530,6 +675,230 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
             </div>
           )
         )}
+
+        <Dialog open={showComparisonModal} onOpenChange={setShowComparisonModal}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              {/* <CHANGE> Removed duplicate X button from DialogTitle */}
+              <DialogTitle>Date Comparison Analysis</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-6">
+              {selectedDates.length === 2 ? (
+                // Two-date comparison (existing logic)
+                getDateComparison().map((comparison: any, index) => (
+                  <div key={index} className="border border-gray-200 rounded-lg p-4">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                      {comparison.fromDate} → {comparison.toDate}
+                    </h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      <div className="bg-gray-50 p-3 rounded">
+                        <div className="text-sm font-medium text-gray-700">Earnings</div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-lg font-semibold">
+                            ${comparison.metrics.ESTIMATED_EARNINGS.to.toFixed(4)}
+                          </span>
+                          <div className="flex items-center gap-1">
+                            {comparison.metrics.ESTIMATED_EARNINGS.change > 0 ? (
+                              <TrendingUp className="w-4 h-4 text-green-500" />
+                            ) : comparison.metrics.ESTIMATED_EARNINGS.change < 0 ? (
+                              <TrendingDown className="w-4 h-4 text-red-500" />
+                            ) : null}
+                            <span
+                              className={`text-sm ${comparison.metrics.ESTIMATED_EARNINGS.change > 0 ? "text-green-600" : comparison.metrics.ESTIMATED_EARNINGS.change < 0 ? "text-red-600" : "text-gray-600"}`}
+                            >
+                              {comparison.metrics.ESTIMATED_EARNINGS.change > 0 ? "+" : ""}$
+                              {comparison.metrics.ESTIMATED_EARNINGS.change.toFixed(4)} (
+                              {comparison.metrics.ESTIMATED_EARNINGS.changePercent.toFixed(1)}%)
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-gray-50 p-3 rounded">
+                        <div className="text-sm font-medium text-gray-700">Clicks</div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-lg font-semibold">{comparison.metrics.CLICKS.to}</span>
+                          <div className="flex items-center gap-1">
+                            {comparison.metrics.CLICKS.change > 0 ? (
+                              <TrendingUp className="w-4 h-4 text-green-500" />
+                            ) : comparison.metrics.CLICKS.change < 0 ? (
+                              <TrendingDown className="w-4 h-4 text-red-500" />
+                            ) : null}
+                            <span
+                              className={`text-sm ${comparison.metrics.CLICKS.change > 0 ? "text-green-600" : comparison.metrics.CLICKS.change < 0 ? "text-red-600" : "text-gray-600"}`}
+                            >
+                              {comparison.metrics.CLICKS.change > 0 ? "+" : ""}
+                              {comparison.metrics.CLICKS.change} ({comparison.metrics.CLICKS.changePercent.toFixed(1)}%)
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-gray-50 p-3 rounded">
+                        <div className="text-sm font-medium text-gray-700">Impressions</div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-lg font-semibold">{comparison.metrics.IMPRESSIONS.to}</span>
+                          <div className="flex items-center gap-1">
+                            {comparison.metrics.IMPRESSIONS.change > 0 ? (
+                              <TrendingUp className="w-4 h-4 text-green-500" />
+                            ) : comparison.metrics.IMPRESSIONS.change < 0 ? (
+                              <TrendingDown className="w-4 h-4 text-red-500" />
+                            ) : null}
+                            <span
+                              className={`text-sm ${comparison.metrics.IMPRESSIONS.change > 0 ? "text-green-600" : comparison.metrics.IMPRESSIONS.change < 0 ? "text-red-600" : "text-gray-600"}`}
+                            >
+                              {comparison.metrics.IMPRESSIONS.change > 0 ? "+" : ""}
+                              {comparison.metrics.IMPRESSIONS.change} (
+                              {comparison.metrics.IMPRESSIONS.changePercent.toFixed(1)}%)
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-gray-50 p-3 rounded">
+                        <div className="text-sm font-medium text-gray-700">eCPM</div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-lg font-semibold">${comparison.metrics.OBSERVED_ECPM.to.toFixed(2)}</span>
+                          <div className="flex items-center gap-1">
+                            {comparison.metrics.OBSERVED_ECPM.change > 0 ? (
+                              <TrendingUp className="w-4 h-4 text-green-500" />
+                            ) : comparison.metrics.OBSERVED_ECPM.change < 0 ? (
+                              <TrendingDown className="w-4 h-4 text-red-500" />
+                            ) : null}
+                            <span
+                              className={`text-sm ${comparison.metrics.OBSERVED_ECPM.change > 0 ? "text-green-600" : comparison.metrics.OBSERVED_ECPM.change < 0 ? "text-red-600" : "text-gray-600"}`}
+                            >
+                              {comparison.metrics.OBSERVED_ECPM.change > 0 ? "+" : ""}$
+                              {comparison.metrics.OBSERVED_ECPM.change.toFixed(2)} (
+                              {comparison.metrics.OBSERVED_ECPM.changePercent.toFixed(1)}%)
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-gray-50 p-3 rounded">
+                        <div className="text-sm font-medium text-gray-700">CTR</div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-lg font-semibold">
+                            {comparison.metrics.IMPRESSION_CTR.to.toFixed(2)}%
+                          </span>
+                          <div className="flex items-center gap-1">
+                            {comparison.metrics.IMPRESSION_CTR.change > 0 ? (
+                              <TrendingUp className="w-4 h-4 text-green-500" />
+                            ) : comparison.metrics.IMPRESSION_CTR.change < 0 ? (
+                              <TrendingDown className="w-4 h-4 text-red-500" />
+                            ) : null}
+                            <span
+                              className={`text-sm ${comparison.metrics.IMPRESSION_CTR.change > 0 ? "text-green-600" : comparison.metrics.IMPRESSION_CTR.change < 0 ? "text-red-600" : "text-gray-600"}`}
+                            >
+                              {comparison.metrics.IMPRESSION_CTR.change > 0 ? "+" : ""}
+                              {comparison.metrics.IMPRESSION_CTR.change.toFixed(2)}% (
+                              {comparison.metrics.IMPRESSION_CTR.changePercent.toFixed(1)}%)
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-gray-50 p-3 rounded">
+                        <div className="text-sm font-medium text-gray-700">Match Rate</div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-lg font-semibold">{comparison.metrics.MATCH_RATE.to.toFixed(2)}%</span>
+                          <div className="flex items-center gap-1">
+                            {comparison.metrics.MATCH_RATE.change > 0 ? (
+                              <TrendingUp className="w-4 h-4 text-green-500" />
+                            ) : comparison.metrics.MATCH_RATE.change < 0 ? (
+                              <TrendingDown className="w-4 h-4 text-red-500" />
+                            ) : null}
+                            <span
+                              className={`text-sm ${comparison.metrics.MATCH_RATE.change > 0 ? "text-green-600" : comparison.metrics.MATCH_RATE.change < 0 ? "text-red-600" : "text-gray-600"}`}
+                            >
+                              {comparison.metrics.MATCH_RATE.change > 0 ? "+" : ""}
+                              {comparison.metrics.MATCH_RATE.change.toFixed(2)}% (
+                              {comparison.metrics.MATCH_RATE.changePercent.toFixed(1)}%)
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                // <CHANGE> Multi-date comparison (3+ dates) - side by side table
+                <div className="border border-gray-200 rounded-lg overflow-hidden">
+                  <div className="bg-gray-50 p-4 border-b">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Multi-Date Comparison ({selectedDates.length} dates)
+                    </h3>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50 border-b">
+                        <tr>
+                          <th className="text-left py-3 px-4 font-medium text-gray-700">Metric</th>
+                          {getDateComparison().map((item: any) => (
+                            <th key={item.date} className="text-center py-3 px-4 font-medium text-gray-700">
+                              {item.date}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="border-b hover:bg-gray-50">
+                          <td className="py-3 px-4 font-medium text-gray-900">Earnings ($)</td>
+                          {getDateComparison().map((item: any) => (
+                            <td key={item.date} className="py-3 px-4 text-center font-mono">
+                              ${item.data.ESTIMATED_EARNINGS.toFixed(4)}
+                            </td>
+                          ))}
+                        </tr>
+                        <tr className="border-b hover:bg-gray-50">
+                          <td className="py-3 px-4 font-medium text-gray-900">Clicks</td>
+                          {getDateComparison().map((item: any) => (
+                            <td key={item.date} className="py-3 px-4 text-center font-mono">
+                              {item.data.CLICKS}
+                            </td>
+                          ))}
+                        </tr>
+                        <tr className="border-b hover:bg-gray-50">
+                          <td className="py-3 px-4 font-medium text-gray-900">Impressions</td>
+                          {getDateComparison().map((item: any) => (
+                            <td key={item.date} className="py-3 px-4 text-center font-mono">
+                              {item.data.IMPRESSIONS}
+                            </td>
+                          ))}
+                        </tr>
+                        <tr className="border-b hover:bg-gray-50">
+                          <td className="py-3 px-4 font-medium text-gray-900">eCPM ($)</td>
+                          {getDateComparison().map((item: any) => (
+                            <td key={item.date} className="py-3 px-4 text-center font-mono">
+                              ${item.data.OBSERVED_ECPM.toFixed(2)}
+                            </td>
+                          ))}
+                        </tr>
+                        <tr className="border-b hover:bg-gray-50">
+                          <td className="py-3 px-4 font-medium text-gray-900">CTR (%)</td>
+                          {getDateComparison().map((item: any) => (
+                            <td key={item.date} className="py-3 px-4 text-center font-mono">
+                              {item.data.IMPRESSION_CTR.toFixed(2)}%
+                            </td>
+                          ))}
+                        </tr>
+                        <tr className="hover:bg-gray-50">
+                          <td className="py-3 px-4 font-medium text-gray-900">Match Rate (%)</td>
+                          {getDateComparison().map((item: any) => (
+                            <td key={item.date} className="py-3 px-4 text-center font-mono">
+                              {item.data.MATCH_RATE.toFixed(2)}%
+                            </td>
+                          ))}
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )
