@@ -5,6 +5,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertTriangle } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AppOverviewTable } from "./app-overview-table"
+import { MetricChart } from "./metric-chart"
+import { Checkbox } from "@/components/ui/checkbox"
 
 interface MetricData {
   CLICKS?: number
@@ -57,6 +59,8 @@ interface AppMetricsDashboardProps {
 }
 
 export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardProps) {
+  const { useRouter } = require('next/navigation');
+  const router = useRouter();
   const [selectedPublisherId, setSelectedPublisherId] = useState<string>("")
   const [selectedApp, setSelectedApp] = useState<string | null>(initialSelectedApp || null)
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null)
@@ -200,13 +204,13 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
     {
       value: "IMPRESSION_CTR",
       label: "Impression CTR",
-      format: (val: number) => `${(val).toFixed(2)}%`,
+      format: (val: number) => `${(val * 100).toFixed(2)}%`,
       color: "#8b5cf6",
     },
     {
       value: "MATCH_RATE",
       label: "Match Rate",
-      format: (val: number) => `${(val * 10).toFixed(1)}%`,
+      format: (val: number) => `${(val * 100).toFixed(1)}%`,
       color: "#06b6d4",
     },
   ]
@@ -222,6 +226,16 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
         color: metric!.color,
       }))
   }
+
+  const chartData = dailyData.map((day) => ({
+    date: day.date,
+    CLICKS: day.metrics?.CLICKS || 0,
+    ESTIMATED_EARNINGS: day.metrics?.ESTIMATED_EARNINGS || 0,
+    IMPRESSIONS: day.metrics?.IMPRESSIONS || 0,
+    IMPRESSION_CTR: day.metrics?.IMPRESSION_CTR || 0,
+    MATCH_RATE: day.metrics?.MATCH_RATE || 0,
+    OBSERVED_ECPM: day.metrics?.OBSERVED_ECPM || 0,
+  }))
 
   if (loading) {
     return (
@@ -309,8 +323,9 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
                 </div>
                 <button
                   onClick={() => {
-                    setSelectedApp(null)
-                    setDailyData([])
+                    setSelectedApp(null);
+                    setDailyData([]);
+                    router.push('/dashboard/app-performance');
                   }}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
                 >
@@ -325,41 +340,83 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
                   <span className="ml-3 text-gray-600">Loading 30-day data...</span>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-gray-200">
-                        <th className="text-left p-3 text-gray-700 font-medium">Date</th>
-                        <th className="text-right p-3 text-gray-700 font-medium">Earnings ($)</th>
-                        <th className="text-right p-3 text-gray-700 font-medium">Clicks</th>
-                        <th className="text-right p-3 text-gray-700 font-medium">Impressions</th>
-                        <th className="text-right p-3 text-gray-700 font-medium">eCPM ($)</th>
-                        <th className="text-right p-3 text-gray-700 font-medium">CTR (%)</th>
-                        <th className="text-right p-3 text-gray-700 font-medium">Match Rate (%)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {dailyData.map((day) => (
-                        <tr key={day.date} className="border-b border-gray-100">
-                          <td className="p-3 font-medium text-gray-900">{day.date}</td>
-                          <td className="p-3 text-right font-mono">
-                            ${day.metrics?.ESTIMATED_EARNINGS?.toFixed(4) ?? "0.0000"}
-                          </td>
-                          <td className="p-3 text-right font-mono">{day.metrics?.CLICKS ?? 0}</td>
-                          <td className="p-3 text-right font-mono">{day.metrics?.IMPRESSIONS ?? 0}</td>
-                          <td className="p-3 text-right font-mono">
-                            ${day.metrics?.OBSERVED_ECPM?.toFixed(2) ?? "0.00"}
-                          </td>
-                          <td className="p-3 text-right font-mono">
-                            {((day.metrics?.IMPRESSION_CTR ?? 0) * 1).toFixed(2)}%
-                          </td>
-                          <td className="p-3 text-right font-mono">
-                            {((day.metrics?.MATCH_RATE ?? 0) * 10).toFixed(2)}%
-                          </td>
-                        </tr>
+                <div className="space-y-6">
+                  <div className="bg-white border border-gray-200 rounded-lg">
+                    <div className="p-4 border-b border-gray-200">
+                      <h3 className="text-lg font-medium text-gray-900">Daily Metrics Table</h3>
+                    </div>
+                    <div style={{ maxHeight: "500px", overflowY: "auto" }} className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="sticky top-0 bg-gray-50 border-b border-gray-200 z-10">
+                          <tr>
+                            <th className="text-left p-3 text-gray-700 font-medium">Date</th>
+                            <th className="text-right p-3 text-gray-700 font-medium">Earnings ($)</th>
+                            <th className="text-right p-3 text-gray-700 font-medium">Clicks</th>
+                            <th className="text-right p-3 text-gray-700 font-medium">Impressions</th>
+                            <th className="text-right p-3 text-gray-700 font-medium">eCPM ($)</th>
+                            <th className="text-right p-3 text-gray-700 font-medium">CTR (%)</th>
+                            <th className="text-right p-3 text-gray-700 font-medium">Match Rate (%)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {dailyData.map((day) => (
+                            <tr key={day.date} className="border-b border-gray-100 hover:bg-gray-50">
+                              <td className="p-3 font-medium text-gray-900">{day.date}</td>
+                              <td className="p-3 text-right font-mono">
+                                ${day.metrics?.ESTIMATED_EARNINGS?.toFixed(4) ?? "0.0000"}
+                              </td>
+                              <td className="p-3 text-right font-mono">{day.metrics?.CLICKS ?? 0}</td>
+                              <td className="p-3 text-right font-mono">{day.metrics?.IMPRESSIONS ?? 0}</td>
+                              <td className="p-3 text-right font-mono">
+                                ${day.metrics?.OBSERVED_ECPM?.toFixed(2) ?? "0.00"}
+                              </td>
+                              <td className="p-3 text-right font-mono">
+                                {((day.metrics?.IMPRESSION_CTR ?? 0) * 10).toFixed(2)}%
+                              </td>
+                              <td className="p-3 text-right font-mono">
+                                {((day.metrics?.MATCH_RATE ?? 0) * 1).toFixed(2)}%
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {selectedMetrics.length > 0 && (
+                    <div className="bg-white border border-gray-200 rounded-lg p-6">
+                      <h3 className="text-lg font-medium text-gray-900 mb-4">Performance Trends</h3>
+                      <MetricChart
+                        data={chartData}
+                        selectedMetrics={getSelectedMetricConfigs()}
+                        title="30-Day Performance Metrics"
+                      />
+                    </div>
+                  )}
+
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">Select Metrics to Display</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {metricOptions.map((option) => (
+                        <div key={option.value} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={option.value}
+                            checked={selectedMetrics.includes(option.value)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedMetrics([...selectedMetrics, option.value])
+                              } else {
+                                setSelectedMetrics(selectedMetrics.filter((m) => m !== option.value))
+                              }
+                            }}
+                          />
+                          <label htmlFor={option.value} className="text-sm font-medium text-gray-700 cursor-pointer">
+                            {option.label}
+                          </label>
+                        </div>
                       ))}
-                    </tbody>
-                  </table>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
