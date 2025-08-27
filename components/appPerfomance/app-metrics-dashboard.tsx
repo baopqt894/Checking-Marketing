@@ -312,7 +312,7 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
   }
 
   return (
-                          <table className="w-full text-sm table-fixed">
+    <div className="min-h-screen bg-white">
       <div className="max-w-7xl mx-auto p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-6">
