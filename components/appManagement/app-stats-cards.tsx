@@ -22,15 +22,15 @@ export function EnhancedStatsCards({ apps }: EnhancedStatsCardsProps) {
   const actionRequiredRate = totalApps > 0 ? (actionRequiredApps / totalApps) * 100 : 0
 
   const getApprovalRateColor = (rate: number) => {
-    if (rate >= 80) return "green"
-    if (rate >= 50) return "yellow"
-    return "red"
+    if (rate >= 80) return "blue"
+    if (rate >= 50) return "blue"
+    return "blue"
   }
 
   const getApprovalRateText = (rate: number) => {
-    if (rate >= 80) return { text: "Excellent approval rate", color: "text-green-600", icon: TrendingUp }
-    if (rate >= 50) return { text: "Good approval rate", color: "text-yellow-600", icon: TrendingUp }
-    return { text: "Needs improvement", color: "text-red-600", icon: TrendingDown }
+    if (rate >= 80) return { text: "Excellent approval rate", color: "text-blue-600", icon: TrendingUp }
+    if (rate >= 50) return { text: "Good approval rate", color: "text-blue-600", icon: TrendingUp }
+    return { text: "Needs improvement", color: "text-blue-600", icon: TrendingDown }
   }
 
   const approvalRateInfo = getApprovalRateText(approvalRate)
@@ -48,12 +48,12 @@ export function EnhancedStatsCards({ apps }: EnhancedStatsCardsProps) {
           <div className="mt-4 space-y-3">
             <div className="flex items-center justify-between text-xs">
               <span className="flex items-center gap-1">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                 Android
               </span>
               <span className="font-medium">{androidApps}</span>
             </div>
-            <Progress value={androidRate} color="green" className="h-2" />
+            <Progress value={androidRate} color="blue" className="h-2" />
 
             <div className="flex items-center justify-between text-xs">
               <span className="flex items-center gap-1">
@@ -70,20 +70,15 @@ export function EnhancedStatsCards({ apps }: EnhancedStatsCardsProps) {
       <Card className="relative overflow-hidden">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Approved Apps</CardTitle>
-          <CheckCircle className="h-4 w-4 text-green-600" />
+          <CheckCircle className="h-4 w-4 text-blue-600" />
         </CardHeader>
         <CardContent>
-          <div className="text-3xl font-bold text-green-600">{approvedApps}</div>
+          <div className="text-3xl font-bold ">{approvedApps}</div>
           <div className="mt-3 flex items-center gap-2">
-            <Progress value={approvalRate} color="green" className="flex-1 h-2" />
-            <span className="text-sm font-medium text-green-600">{Math.round(approvalRate)}%</span>
+            <Progress value={approvalRate} color="blue" className="flex-1 h-2" />
+            <span className="text-sm font-medium text-blue-600">{Math.round(approvalRate)}%</span>
           </div>
-          <p className="text-xs mt-2">
-            <span className={`flex items-center gap-1 ${approvalRateInfo.color}`}>
-              <ApprovalIcon className="h-3 w-3" />
-              {approvalRateInfo.text}
-            </span>
-          </p>
+         
         </CardContent>
       </Card>
 
@@ -91,17 +86,17 @@ export function EnhancedStatsCards({ apps }: EnhancedStatsCardsProps) {
       <Card className="relative overflow-hidden">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Action Required</CardTitle>
-          <AlertCircle className="h-4 w-4 text-orange-600" />
+          <AlertCircle className="h-4 w-4 text-blue-600" />
         </CardHeader>
         <CardContent>
-          <div className="text-3xl font-bold text-orange-600">{actionRequiredApps}</div>
+          <div className="text-3xl font-bold ">{actionRequiredApps}</div>
           <div className="mt-3 flex items-center gap-2">
-            <Progress value={actionRequiredRate} color="orange" className="flex-1 h-2" />
-            <span className="text-sm font-medium text-orange-600">{Math.round(actionRequiredRate)}%</span>
+            <Progress value={actionRequiredRate} color="blue" className="flex-1 h-2" />
+            <span className="text-sm font-medium text-blue-600">{Math.round(actionRequiredRate)}%</span>
           </div>
-          <p className="text-xs text-orange-600 mt-2">
+          <p className="text-xs text-blue-600 mt-2">
             {actionRequiredApps === 0 ? (
-              <span className="text-green-600">All apps approved!</span>
+              <span className="text-blue-600">All apps approved!</span>
             ) : (
               <span>{actionRequiredApps} apps need attention</span>
             )}
@@ -118,15 +113,15 @@ export function EnhancedStatsCards({ apps }: EnhancedStatsCardsProps) {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
                 <span className="text-sm font-medium">Android</span>
               </div>
               <div className="text-right">
-                <div className="text-lg font-bold text-green-600">{androidApps}</div>
+                <div className="text-lg font-bold text-blue-600">{androidApps}</div>
                 <div className="text-xs text-muted-foreground">{Math.round(androidRate)}%</div>
               </div>
             </div>
-            <Progress value={androidRate} color="green" className="h-2" />
+            <Progress value={androidRate} color="blue" className="h-2" />
 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">

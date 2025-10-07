@@ -23,7 +23,7 @@ export function AppTable({ apps, onViewDetails }: AppTableProps) {
       )
     }
     return (
-      <Badge variant="secondary" className="bg-orange-100 text-orange-800 hover:bg-orange-100">
+      <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-100">
         <AlertCircle className="w-3 h-3 mr-1" />
         Action Required
       </Badge>

@@ -276,7 +276,7 @@ export function CountryAnalyticsDashboard({ appId: propAppId, country: propCount
       <div className="min-h-screen bg-white p-6">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col items-center justify-center min-h-[60vh]">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
             <p className="text-gray-600 text-lg font-medium mb-2">Loading {country} metrics...</p>
             <p className="text-gray-500 text-sm">Fetching daily performance data</p>
           </div>
@@ -329,7 +329,7 @@ export function CountryAnalyticsDashboard({ appId: propAppId, country: propCount
                     <div className="flex items-center space-x-2">
                       <div className="font-mono font-bold">{formatValue(currentValue, metric)}</div>
                       <div
-                        className={`font-mono flex items-center text-xs ${change24h >= 0 ? "text-green-600" : "text-red-600"}`}
+                        className={`font-mono flex items-center text-xs ${change24h >= 0 ? "text-blue-600" : "text-red-600"}`}
                       >
                         {change24h >= 0 ? (
                           <TrendingUp className="w-3 h-3 mr-1" />
@@ -350,7 +350,7 @@ export function CountryAnalyticsDashboard({ appId: propAppId, country: propCount
 
       {error && (
         <div className="max-w-7xl mx-auto px-6 py-3">
-          <div className="p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
             ⚠️ Demo Mode: {error}. Showing sample data for demonstration.
           </div>
         </div>
@@ -404,7 +404,7 @@ export function CountryAnalyticsDashboard({ appId: propAppId, country: propCount
                       <div key={metricValue} className="p-3 rounded bg-blue-50 border border-blue-200">
                         <div className="text-xs text-gray-600">{metric.label}</div>
                         <div className="font-mono text-sm font-bold">{metric.format(value)}</div>
-                        <div className={`text-xs flex items-center ${change >= 0 ? "text-green-600" : "text-red-600"}`}>
+                        <div className={`text-xs flex items-center ${change >= 0 ? "text-blue-600" : "text-red-600"}`}>
                           {change >= 0 ? (
                             <TrendingUp className="w-3 h-3 mr-1" />
                           ) : (
@@ -459,7 +459,7 @@ export function CountryAnalyticsDashboard({ appId: propAppId, country: propCount
                               return (
                                 <span
                                   key={metric}
-                                  className={`flex-1 text-center ${isUp ? "text-green-600" : "text-red-600"}`}
+                                  className={`flex-1 text-center ${isUp ? "text-blue-600" : "text-red-600"}`}
                                 >
                                   {formatValue(value, metric)}
                                 </span>
@@ -514,7 +514,7 @@ export function CountryAnalyticsDashboard({ appId: propAppId, country: propCount
                             <div className="font-mono text-sm font-bold">{metric.format(monthlyValue)}</div>
                           </div>
                           <div
-                            className={`text-xs flex items-center ${monthlyChange >= 0 ? "text-green-600" : "text-red-600"}`}
+                            className={`text-xs flex items-center ${monthlyChange >= 0 ? "text-blue-600" : "text-red-600"}`}
                           >
                             {monthlyChange >= 0 ? (
                               <TrendingUp className="w-3 h-3 mr-1" />

@@ -96,7 +96,7 @@ export function AppOverviewTable({ apiData }: AppOverviewTableProps) {
 
     const isPositive = change > 0
     const Icon = isPositive ? TrendingUp : TrendingDown
-    const colorClass = isPositive ? "text-green-600" : "text-red-600"
+    const colorClass = isPositive ? "text-blue-600" : "text-red-600"
 
     return (
       <div className={`inline-flex items-center ml-1 ${colorClass}`}>
@@ -111,18 +111,18 @@ export function AppOverviewTable({ apiData }: AppOverviewTableProps) {
       <div className=" p-4 rounded-lg border ">
         <div className="flex items-center gap-4 mb-4">
           <div className="flex items-center gap-2 flex-1">
-            <Search className="w-4 h-4 text-amber-600" />
+            <Search className="w-4 h-4 text-blue-600" />
             <Input
               placeholder="Search apps..."
               value={searchTerm}
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="bg-white text-amber-900 placeholder-amber-500 focus:border-amber-500 focus:ring-amber-500"
+              className="bg-white text-blue-900 placeholder-blue-500 focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-amber-700 font-medium">Show:</span>
+            <span className="text-sm text-blue-700 font-medium">Show:</span>
             <Select value={itemsPerPage.toString()} onValueChange={handleItemsPerPageChange}>
-              <SelectTrigger className="w-20  focus:border-amber-500">
+              <SelectTrigger className="w-20  focus:border-blue-500">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -135,11 +135,11 @@ export function AppOverviewTable({ apiData }: AppOverviewTableProps) {
         </div>
 
         <div className="flex items-center gap-4">
-          <Filter className="w-4 h-4 text-amber-600" />
+          <Filter className="w-4 h-4 text-blue-600" />
           <div className="flex items-center gap-2">
-            <span className="text-sm text-amber-700 font-medium">Earnings:</span>
+            <span className="text-sm text-blue-700 font-medium">Earnings:</span>
             <Select value={earningsFilter} onValueChange={setEarningsFilter}>
-              <SelectTrigger className="w-32  focus:border-amber-500">
+              <SelectTrigger className="w-32  focus:border-blue-500">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -152,9 +152,9 @@ export function AppOverviewTable({ apiData }: AppOverviewTableProps) {
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-sm text-amber-700 font-medium">Performance:</span>
+            <span className="text-sm text-blue-700 font-medium">Performance:</span>
             <Select value={performanceFilter} onValueChange={setPerformanceFilter}>
-              <SelectTrigger className="w-32  focus:border-amber-500">
+              <SelectTrigger className="w-32  focus:border-blue-500">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -169,8 +169,8 @@ export function AppOverviewTable({ apiData }: AppOverviewTableProps) {
 
       <Card className=" mt-4">
         <CardHeader>
-          <CardTitle className="text-amber-900">App Performance Overview</CardTitle>
-          <CardDescription className="text-amber-600">
+          <CardTitle className="text-blue-900">App Performance Overview</CardTitle>
+          <CardDescription className="text-blue-600">
             Today's performance data with yesterday comparison ({filteredApps.length} apps found)
           </CardDescription>
         </CardHeader>
@@ -193,7 +193,7 @@ export function AppOverviewTable({ apiData }: AppOverviewTableProps) {
               </thead>
               <tbody>
                 {currentApps.map((app) => (
-                  <tr key={app.appId} className="border-b hover:bg-amber-50">
+                  <tr key={app.appId} className="border-b hover:bg-blue-50">
                     <td className="p-3 font-medium ">
                       <div>
                         <div className="font-semibold">{app.appName}</div>
@@ -296,7 +296,7 @@ export function AppOverviewTable({ apiData }: AppOverviewTableProps) {
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="text-amber-600 hover:bg-amber-100"
+                        className="text-blue-600 hover:bg-blue-100"
                         onClick={() => router.push(`/dashboard/app-performance/${encodeURIComponent(app.appId)}`)}
                       >
                         <Eye className="w-4 h-4" />
@@ -310,7 +310,7 @@ export function AppOverviewTable({ apiData }: AppOverviewTableProps) {
 
           {totalPages > 1 && (
             <div className="flex items-center justify-between mt-4 pt-4 border-t ">
-              <div className="text-sm text-amber-600">
+              <div className="text-sm text-blue-600">
                 Showing {startIndex + 1} to {Math.min(endIndex, filteredApps.length)} of {filteredApps.length} apps
               </div>
               <div className="flex items-center gap-2">
@@ -319,12 +319,12 @@ export function AppOverviewTable({ apiData }: AppOverviewTableProps) {
                   size="sm"
                   onClick={() => setCurrentPage(currentPage - 1)}
                   disabled={currentPage === 1}
-                  className=" text-amber-700 hover:bg-amber-50"
+                  className=" text-blue-700 hover:bg-blue-50"
                 >
                   <ChevronLeft className="w-4 h-4" />
                   Previous
                 </Button>
-                <span className="text-sm text-amber-600">
+                <span className="text-sm text-blue-600">
                   Page {currentPage} of {totalPages}
                 </span>
                 <Button
@@ -332,7 +332,7 @@ export function AppOverviewTable({ apiData }: AppOverviewTableProps) {
                   size="sm"
                   onClick={() => setCurrentPage(currentPage + 1)}
                   disabled={currentPage === totalPages}
-                  className=" text-amber-700 hover:bg-amber-50"
+                  className=" text-blue-700 hover:bg-blue-50"
                 >
                   Next
                   <ChevronRight className="w-4 h-4" />

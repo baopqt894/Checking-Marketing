@@ -50,7 +50,7 @@ export function PerformanceStats({
           <div className="p-4 bg-gray-50 rounded-lg">
             <div className="text-sm text-gray-600 mb-1">Current {metricLabel}</div>
             <div className="text-2xl font-bold text-gray-900">{metricFormatter(currentValue)}</div>
-            <div className={`text-sm ${metricChange >= 0 ? "text-green-600" : "text-red-600"}`}>
+            <div className={`text-sm ${metricChange >= 0 ? "text-blue-600" : "text-red-600"}`}>
               {metricChange >= 0 ? "+" : ""}
               {metricChange.toFixed(2)}% (24h)
             </div>

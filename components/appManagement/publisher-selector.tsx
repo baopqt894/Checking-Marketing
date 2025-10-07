@@ -136,12 +136,12 @@ export function PublisherSelector({
         </div>
 
         {publishers.length === 0 && !loading && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <div className="flex items-start gap-2">
-              <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+              <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-sm font-medium text-yellow-800">No Publishers Available</p>
-                <p className="text-xs text-yellow-600 mt-1">
+                <p className="text-sm font-medium text-blue-800">No Publishers Available</p>
+                <p className="text-xs text-blue-600 mt-1">
                   No publishers with valid Publisher IDs were found. Please ensure publishers have configured their
                   Publisher IDs.
                 </p>

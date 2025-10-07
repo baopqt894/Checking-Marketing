@@ -102,9 +102,9 @@ export function UnifiedMetricsTable({ selectedApp, apiData, onSelectCountry }: U
   }
 
   const getChangeColor = (change: number) => {
-    if (change > 0) return "text-green-600"
+    if (change > 0) return "text-blue-600"
     if (change < -20) return "text-red-600"
-    if (change < -10) return "text-orange-500"
+    if (change < -10) return "text-blue-500"
     return "text-red-500"
   }
 
@@ -113,7 +113,7 @@ export function UnifiedMetricsTable({ selectedApp, apiData, onSelectCountry }: U
       case "danger":
         return "bg-red-50 border-l-4 border-red-500 hover:bg-red-100"
       case "warning":
-        return "bg-orange-50 border-l-4 border-orange-500 hover:bg-orange-100"
+        return "bg-blue-50 border-l-4 border-blue-500 hover:bg-blue-100"
       default:
         return "hover:bg-gray-50"
     }
@@ -223,7 +223,7 @@ export function UnifiedMetricsTable({ selectedApp, apiData, onSelectCountry }: U
                           <div className="flex items-center gap-2 text-gray-900">
                             {detail.country}
                             {status === "danger" && <AlertTriangle className="w-4 h-4 text-red-500" />}
-                            {status === "warning" && <AlertTriangle className="w-4 h-4 text-orange-500" />}
+                            {status === "warning" && <AlertTriangle className="w-4 h-4 text-blue-500" />}
                           </div>
                         </td>
 
