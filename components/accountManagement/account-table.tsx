@@ -42,7 +42,7 @@ export function AccountTable({ accounts, onViewDetails, onEditAccount, onDeleteA
   const getStatusBadge = (isActive: boolean) => {
     if (isActive) {
       return (
-        <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100">
+        <Badge variant="default" className="bg-blue-100 text-blue-800 hover:bg-blue-100">
           <CheckCircle className="w-3 h-3 mr-1" />
           Active
         </Badge>
@@ -201,7 +201,7 @@ export function AccountTable({ accounts, onViewDetails, onEditAccount, onDeleteA
                   <TableCell>
                     <div className="flex flex-col">
                       <span className="font-medium">{account.name}</span>
-                      <span className="text-xs text-muted-foreground">ID: {account.id.slice(-8)}</span>
+                      <span className="text-xs text-muted-foreground">ID: {(account._id || account.id)?.slice(-8)}</span>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -219,12 +219,12 @@ export function AccountTable({ accounts, onViewDetails, onEditAccount, onDeleteA
                   <TableCell>{getStatusBadge(account.isActive)}</TableCell>
                   <TableCell>
                     {account.isLeader ? (
-                      <Badge variant="outline" className="text-yellow-600 border-yellow-200">
+                      <Badge variant="outline" className="text-blue-600 border-blue-200">
                         <Crown className="w-3 h-3 mr-1" />
                         Leader
                       </Badge>
                     ) : (
-                      <Badge variant="outline" className="text-gray-600">
+                      <Badge variant="outline" className="text-blue-600">
                         Member
                       </Badge>
                     )}

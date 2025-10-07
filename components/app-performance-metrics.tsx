@@ -18,10 +18,10 @@ export function AppPerformanceMetrics({ appId }: AppPerformanceMetricsProps) {
   const data = generateAppData(appId, timeframe)
 
   const metricColors = {
-    ctr: "#ef4444",
-    impressions: "#22c55e",
-    revenue: "#3b82f6",
-    ecpm: "#a855f7",
+    ctr: "#f59e0b",        // Amber - Rate/percentage metric
+    impressions: "#06b6d4", // Cyan - View/display metric  
+    revenue: "#10b981",     // Green - Money/earnings metric
+    ecpm: "#84cc16",        // Lime - Revenue per mille metric
   }
 
   const metricTrends = {

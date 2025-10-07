@@ -62,7 +62,7 @@ export function DeleteAccountDialog({ account, isOpen, onClose, onAccountDeleted
                                 <div className="flex items-center justify-between">
                                     <h4 className="font-semibold">{account.name}</h4>
                                     {account.isLeader && (
-                                        <Badge variant="outline" className="text-yellow-600 border-yellow-200">
+                                        <Badge variant="outline" className="text-blue-600 border-blue-200">
                                             <Crown className="w-3 h-3 mr-1" />
                                             Leader
                                         </Badge>

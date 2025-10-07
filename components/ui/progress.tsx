@@ -15,15 +15,15 @@ const Progress = React.forwardRef<React.ElementRef<typeof ProgressPrimitive.Root
     const getColorClasses = (color: string) => {
       switch (color) {
         case "green":
-          return "bg-green-500"
+          return "bg-blue-500"
         case "blue":
           return "bg-blue-500"
         case "orange":
-          return "bg-orange-500"
+          return "bg-blue-500"
         case "red":
           return "bg-red-500"
         case "yellow":
-          return "bg-yellow-500"
+          return "bg-blue-500"
         default:
           return "bg-primary"
       }

@@ -163,7 +163,7 @@ export function AppDetailsModal({ app, isOpen, onClose }: AppDetailsModalProps) 
                         <User className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm font-medium">{accountInfo.name}</span>
                         {accountInfo.isLeader && (
-                          <Badge variant="outline" className="text-yellow-600 border-yellow-200">
+                          <Badge variant="outline" className="text-blue-600 border-blue-200">
                             <Crown className="w-3 h-3 mr-1" />
                             Leader
                           </Badge>

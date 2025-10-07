@@ -1,5 +1,16 @@
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts"
 
+const COLORS = [
+  "#3b82f6", // Primary blue for main metrics
+  "#10b981", // Emerald green for earnings
+  "#f59e0b", // Amber for CTR/rates
+  "#ef4444", // Red for alerts/warnings
+  "#8b5cf6", // Purple for requests
+  "#06b6d4", // Cyan for impressions
+  "#f97316", // Orange for match rates
+  "#84cc16", // Lime for secondary metrics
+]
+
 interface DailyMetric {
   date: string
   CLICKS?: number
@@ -36,26 +47,26 @@ interface MetricChartProps {
 }
 
 const METRIC_COLORS = [
-  "#f59e0b", // amber-500
-  "#d97706", // amber-600
-  "#b45309", // amber-700
-  "#92400e", // amber-800
-  "#78350f", // amber-900
-  "#fbbf24", // amber-400
-  "#3b82f6", // blue-500 (AD_REQUESTS)
-  "#10b981", // green-500 (MATCHED_REQUESTS)
+  "#3b82f6", // Primary blue for main metrics
+  "#10b981", // Emerald green for earnings
+  "#f59e0b", // Amber for CTR/rates
+  "#ef4444", // Red for alerts/warnings
+  "#8b5cf6", // Purple for requests
+  "#06b6d4", // Cyan for impressions
+  "#f97316", // Orange for match rates
+  "#84cc16", // Lime for secondary metrics
 ]
 
-// Map metric key to color for consistency
+// Map metric key to specific colors for easy identification
 const METRIC_COLOR_MAP: Record<string, string> = {
-  CLICKS: "#f59e0b",
-  ESTIMATED_EARNINGS: "#d97706",
-  IMPRESSIONS: "#b45309",
-  IMPRESSION_CTR: "#92400e",
-  MATCH_RATE: "#78350f",
-  OBSERVED_ECPM: "#fbbf24",
-  AD_REQUESTS: "#3b82f6",
-  MATCHED_REQUESTS: "#10b981",
+  CLICKS: "#3b82f6",           // Blue - Primary action metric
+  ESTIMATED_EARNINGS: "#10b981", // Green - Money/earnings
+  IMPRESSIONS: "#06b6d4",      // Cyan - View/display metric
+  IMPRESSION_CTR: "#f59e0b",   // Amber - Rate/percentage
+  MATCH_RATE: "#f97316",       // Orange - Match/success rate
+  OBSERVED_ECPM: "#84cc16",    // Lime - Revenue per mille
+  AD_REQUESTS: "#8b5cf6",      // Purple - Request metrics
+  MATCHED_REQUESTS: "#ef4444", // Red - Secondary request metric
 };
 
 // Add default metricOptions for new metrics if not provided

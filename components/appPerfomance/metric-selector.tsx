@@ -34,7 +34,7 @@ export function MetricSelector({ selectedMetric, onMetricChange, metricOptions }
             key={period}
             variant={period === "1D" ? "default" : "ghost"}
             size="sm"
-            className={period === "1D" ? "bg-orange-500 hover:bg-orange-600" : "text-gray-600 hover:text-gray-900"}
+            className={period === "1D" ? "bg-blue-500 hover:bg-blue-600" : "text-gray-600 hover:text-gray-900"}
           >
             {period}
           </Button>

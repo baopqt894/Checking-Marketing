@@ -28,6 +28,7 @@ import {
   SidebarMenuSubItem,
   SidebarRail
 } from '@/components/ui/sidebar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { UserAvatarProfile } from '@/components/user-avatar-profile';
 import { navItems } from '@/constants/data';
 import { useMediaQuery } from '@/hooks/use-media-query';
@@ -45,6 +46,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import * as React from 'react';
 import { Icons } from '../icons';
 import { OrgSwitcher } from '../org-switcher';
+import { logout } from '@/lib/auth';
+import { useAuth } from '@/hooks/use-auth';
 export const company = {
   name: 'Acme Inc',
   logo: IconPhotoUp,
@@ -61,8 +64,18 @@ export default function AppSidebar() {
   const pathname = usePathname();
   const { isOpen } = useMediaQuery();
   const router = useRouter();
+  const { user } = useAuth();
+  
   const handleSwitchTenant = (_tenantId: string) => {
     // Tenant switching functionality would be implemented here
+  };
+
+  const handleLogout = () => {
+    // Clear all authentication data using utility function
+    logout()
+    
+    // Redirect to login page
+    router.push("/")
   };
 
   const activeTenant = tenants[0];
@@ -149,7 +162,18 @@ export default function AppSidebar() {
                   size='lg'
                   className='data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
                 >
-                  
+                  <Avatar className='h-8 w-8 rounded-lg'>
+                    <AvatarImage src='/placeholder.svg' alt={user?.name || 'User'} />
+                    <AvatarFallback className='rounded-lg'>
+                      {user?.name?.slice(0, 2)?.toUpperCase() || user?.email?.slice(0, 2)?.toUpperCase() || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className='grid flex-1 text-left text-sm leading-tight'>
+                    <span className='truncate font-semibold'>{user?.name || 'User'}</span>
+                    <span className='truncate text-xs text-muted-foreground'>
+                      {user?.email || 'user@example.com'}
+                    </span>
+                  </div>
                   <IconChevronsDown className='ml-auto size-4' />
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
@@ -183,9 +207,12 @@ export default function AppSidebar() {
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={handleLogout}
+                  className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                >
                   <IconLogout className='mr-2 h-4 w-4' />
-         
+                  Log out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

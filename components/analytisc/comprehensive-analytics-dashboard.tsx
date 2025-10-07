@@ -184,7 +184,7 @@ export function ComprehensiveAnalyticsDashboard({ data, dateRange, isLoading }: 
                         <TrendingUp className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-orange-600">{formatCurrency(Number((data.averageEcpm / 1000000000).toFixed(2)))}</div>
+                        <div className="text-2xl font-bold text-blue-600">{formatCurrency(Number((data.averageEcpm / 1000000000).toFixed(2)))}</div>
                     </CardContent>
                 </Card>
 

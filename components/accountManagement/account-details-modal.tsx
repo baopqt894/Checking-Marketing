@@ -116,13 +116,13 @@ export function AccountDetailsModal({ account, isOpen, onClose }: AccountDetails
             <div className="flex items-center gap-2">
               <Badge
                 variant={account.isActive ? "default" : "secondary"}
-                className={account.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}
+                className={account.isActive ? "bg-blue-100 text-blue-800" : "bg-red-100 text-red-800"}
               >
                 {account.isActive ? <CheckCircle className="w-3 h-3 mr-1" /> : <XCircle className="w-3 h-3 mr-1" />}
                 {account.isActive ? "Active" : "Inactive"}
               </Badge>
               {account.isLeader && (
-                <Badge variant="outline" className="text-yellow-600 border-yellow-200">
+                <Badge variant="outline" className="text-blue-600 border-blue-200">
                   <Crown className="w-3 h-3 mr-1" />
                   Leader
                 </Badge>
@@ -200,12 +200,12 @@ export function AccountDetailsModal({ account, isOpen, onClose }: AccountDetails
                   <label className="text-sm font-medium text-muted-foreground">Role</label>
                   <div className="mt-1">
                     {account.isLeader ? (
-                      <Badge variant="outline" className="text-yellow-600 border-yellow-200">
+                      <Badge variant="outline" className="text-blue-600 border-blue-200">
                         <Crown className="w-3 h-3 mr-1" />
                         Leader
                       </Badge>
                     ) : (
-                      <Badge variant="outline" className="text-gray-600">
+                      <Badge variant="outline" className="text-blue-600">
                         Member
                       </Badge>
                     )}
@@ -245,7 +245,7 @@ export function AccountDetailsModal({ account, isOpen, onClose }: AccountDetails
                             >
                               <div className="flex items-center gap-2 flex-1">
                                 {appDetails.platform === "ANDROID" ? (
-                                  <Smartphone className="h-4 w-4 text-green-600" />
+                                  <Smartphone className="h-4 w-4 text-blue-600" />
                                 ) : appDetails.platform === "IOS" ? (
                                   <Monitor className="h-4 w-4 text-blue-600" />
                                 ) : (

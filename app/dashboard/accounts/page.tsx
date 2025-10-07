@@ -6,33 +6,54 @@ import { DashboardHeader } from "@/components/dashboard-header"
 import { toast } from "sonner"
 import type { Account } from "@/types/account"
 
-import { Plus } from "lucide-react"
+import { Plus, UserPlus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { AccountStatsCards } from "@/components/accountManagement/account-stats-cards"
 import { AccountFilters } from "@/components/accountManagement/account-filters"
 import { AccountTable } from "@/components/accountManagement/account-table"
-import { AccountDetailsModal } from "@/components/accountManagement/account-details-modal"
+import { UserDetailsModal } from "@/components/accountManagement/user-details-modal"
 import { CreateAccountModal } from "@/components/accountManagement/create-account-modal"
-import { EditAccountModal } from "@/components/accountManagement/edit-account-modal"
-import { DeleteAccountDialog } from "@/components/accountManagement/delete-account-dialog"
+import { CreateUserModal } from "@/components/accountManagement/create-user-modal"
+import { EditUserModal } from "@/components/accountManagement/edit-user-modal"
+import { DeleteUserDialog } from "@/components/accountManagement/delete-user-dialog"
+import { UserTable } from "@/components/accountManagement/user-table"
+import { getUserInfo, getAccessToken } from "@/lib/auth"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Users } from "lucide-react"
+
+interface User {
+  _id: string
+  googleId: string
+  email: string
+  name: string
+  role: "admin" | "user"
+  isActive?: boolean
+  createdAt: string
+  updatedAt: string
+  __v?: number
+}
 
 export default function AccountManagement() {
   const [accounts, setAccounts] = useState<Account[]>([])
+  const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState<boolean>(false)
+  const [usersLoading, setUsersLoading] = useState<boolean>(false)
+  const [isAdmin, setIsAdmin] = useState(false)
 
   // Filter states
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
-  const [leaderFilter, setLeaderFilter] = useState("all")
+  const [roleFilter, setRoleFilter] = useState("all")
 
   // Modal states
-  const [selectedAccount, setSelectedAccount] = useState<Account | null>(null)
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showCreateUserModal, setShowCreateUserModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-  const [accountToEdit, setAccountToEdit] = useState<Account | null>(null)
-  const [accountToDelete, setAccountToDelete] = useState<Account | null>(null)
+  const [userToEdit, setUserToEdit] = useState<User | null>(null)
+  const [userToDelete, setUserToDelete] = useState<User | null>(null)
 
   // Filter accounts based on search and filters
   const filteredAccounts = useMemo(() => {
@@ -47,35 +68,96 @@ export default function AccountManagement() {
         (statusFilter === "active" && account.isActive) ||
         (statusFilter === "inactive" && !account.isActive)
 
-      const matchesLeader =
-        leaderFilter === "all" ||
-        (leaderFilter === "leader" && account.isLeader) ||
-        (leaderFilter === "member" && !account.isLeader)
+      const matchesRole =
+        roleFilter === "all" ||
+        (roleFilter === "leader" && account.isLeader) ||
+        (roleFilter === "member" && !account.isLeader)
 
-      return matchesSearch && matchesStatus && matchesLeader
+      return matchesSearch && matchesStatus && matchesRole
     })
-  }, [accounts, searchTerm, statusFilter, leaderFilter])
+  }, [accounts, searchTerm, statusFilter, roleFilter])
+
+  // Filter users based on search and filters
+  const filteredUsers = useMemo(() => {
+    return users.filter((user) => {
+      const matchesSearch =
+        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchTerm.toLowerCase())
+
+      const matchesRole =
+        roleFilter === "all" ||
+        (roleFilter === "admin" && user.role === "admin") ||
+        (roleFilter === "user" && user.role === "user")
+
+      return matchesSearch && matchesRole
+    })
+  }, [users, searchTerm, roleFilter])
 
   const fetchAccounts = async () => {
     setLoading(true)
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL
-      const response = await fetch(`${apiUrl}accounts`)
+      const accessToken = getAccessToken()
+      
+      if (!accessToken) {
+        throw new Error("No access token found")
+      }
+
+      const response = await fetch(`${apiUrl}users`, {
+        headers: {
+          "accept": "*/*",
+          "Authorization": `Bearer ${accessToken}`
+        }
+      })
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
-      const data: Account[] = await response.json()
-      setAccounts(Array.isArray(data) ? data : [data])
+      const data: User[] = await response.json()
+      // Store users in both accounts and users state for backwards compatibility
+      setAccounts(data as any)
+      setUsers(Array.isArray(data) ? data : [data])
       toast.success(
-        `Loaded ${Array.isArray(data) ? data.length : 1} account${Array.isArray(data) && data.length !== 1 ? "s" : ""}`,
+        `Loaded ${Array.isArray(data) ? data.length : 1} user${Array.isArray(data) && data.length !== 1 ? "s" : ""}`,
       )
     } catch (err) {
-      console.error("Failed to fetch accounts:", err)
-      toast.error("Failed to fetch accounts")
+      console.error("Failed to fetch users:", err)
+      toast.error("Failed to fetch users")
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchUsers = async () => {
+    setUsersLoading(true)
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL
+      const accessToken = getAccessToken()
+      
+      if (!accessToken) {
+        throw new Error("No access token found")
+      }
+
+      const response = await fetch(`${apiUrl}users`, {
+        headers: {
+          "accept": "*/*",
+          "Authorization": `Bearer ${accessToken}`
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data: User[] = await response.json()
+      setUsers(Array.isArray(data) ? data : [data])
+      toast.success(`Loaded ${data.length} user${data.length !== 1 ? "s" : ""}`)
+    } catch (err) {
+      console.error("Failed to fetch users:", err)
+      toast.error("Failed to fetch users")
+    } finally {
+      setUsersLoading(false)
     }
   }
 
@@ -83,13 +165,17 @@ export default function AccountManagement() {
     setShowCreateModal(true)
   }
 
-  const handleEditAccount = (account: Account) => {
-    setAccountToEdit(account)
+  const handleCreateUser = () => {
+    setShowCreateUserModal(true)
+  }
+
+  const handleEditAccount = (user: User) => {
+    setUserToEdit(user)
     setShowEditModal(true)
   }
 
-  const handleDeleteAccount = (account: Account) => {
-    setAccountToDelete(account)
+  const handleDeleteAccount = (user: User) => {
+    setUserToDelete(user)
     setShowDeleteDialog(true)
   }
 
@@ -97,18 +183,28 @@ export default function AccountManagement() {
     setShowCreateModal(false)
   }
 
+  const handleCloseCreateUserModal = () => {
+    setShowCreateUserModal(false)
+  }
+
   const handleCloseEditModal = () => {
     setShowEditModal(false)
-    setAccountToEdit(null)
+    setUserToEdit(null)
   }
 
   const handleCloseDeleteDialog = () => {
     setShowDeleteDialog(false)
-    setAccountToDelete(null)
+    setUserToDelete(null)
   }
 
   const handleAccountCreated = () => {
     fetchAccounts()
+  }
+
+  const handleUserCreated = () => {
+    // Refresh users list after creation
+    fetchUsers()
+    toast.success("User created successfully")
   }
 
   const handleAccountUpdated = () => {
@@ -119,18 +215,26 @@ export default function AccountManagement() {
     fetchAccounts()
   }
 
-  const handleViewDetails = (account: Account) => {
-    setSelectedAccount(account)
+  const handleViewDetails = (user: User) => {
+    setSelectedUser(user)
     setShowDetailsModal(true)
   }
 
   const handleCloseDetailsModal = () => {
     setShowDetailsModal(false)
-    setSelectedAccount(null)
+    setSelectedUser(null)
   }
 
   useEffect(() => {
     fetchAccounts()
+    
+    // Check if user is admin from cookie
+    const userInfo = getUserInfo()
+    if (userInfo && userInfo.role === "admin") {
+      setIsAdmin(true)
+      // Fetch users if admin
+      fetchUsers()
+    }
   }, [])
 
   return (
@@ -139,42 +243,111 @@ export default function AccountManagement() {
         title="Account Management"
         description="Manage and monitor your AdMob accounts and associated tokens"
       />
-      <div className="mb-4">
-        <Button onClick={handleCreateAccount} className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          Create Account
-        </Button>
-      </div>
 
-      <AccountStatsCards accounts={accounts} />
+      {isAdmin ? (
+        <Tabs defaultValue="accounts" className="w-full">
+          <div className="flex items-center justify-between mb-4">
+            <TabsList>
+              <TabsTrigger value="accounts">Accounts</TabsTrigger>
+              <TabsTrigger value="users">
+                <Users className="h-4 w-4 mr-2" />
+                Users
+              </TabsTrigger>
+            </TabsList>
+            <div className="flex gap-2">
+              <Button onClick={handleCreateAccount} className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Create Account
+              </Button>
+              <Button onClick={handleCreateUser} variant="secondary" className="flex items-center gap-2">
+                <UserPlus className="h-4 w-4" />
+                Create User
+              </Button>
+            </div>
+          </div>
 
-      <AccountFilters
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        statusFilter={statusFilter}
-        onStatusFilterChange={setStatusFilter}
-        leaderFilter={leaderFilter}
-        onLeaderFilterChange={setLeaderFilter}
-        onRefresh={fetchAccounts}
-        isLoading={loading}
-      />
+          <TabsContent value="accounts" className="space-y-6">
+            <AccountStatsCards accounts={accounts} />
 
-      {loading ? (
-        <div className="text-center text-muted-foreground py-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <h3 className="text-lg font-semibold mb-2">Loading Accounts</h3>
-          <p className="text-sm">Fetching account data...</p>
-        </div>
+            <AccountFilters
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              statusFilter={statusFilter}
+              onStatusFilterChange={setStatusFilter}
+              leaderFilter={roleFilter}
+              onLeaderFilterChange={setRoleFilter}
+              onRefresh={fetchAccounts}
+              isLoading={loading}
+            />
+
+            {loading ? (
+              <div className="text-center text-muted-foreground py-20">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                <h3 className="text-lg font-semibold mb-2">Loading Accounts</h3>
+                <p className="text-sm">Fetching account data...</p>
+              </div>
+            ) : (
+              <UserTable 
+                users={filteredAccounts as any}
+                onViewDetails={handleViewDetails}
+                onEditAccount={handleEditAccount}
+                onDeleteAccount={handleDeleteAccount}
+              />
+            )}
+          </TabsContent>
+
+          <TabsContent value="users" className="space-y-6">
+            {usersLoading ? (
+              <div className="text-center text-muted-foreground py-20">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                <h3 className="text-lg font-semibold mb-2">Loading Users</h3>
+                <p className="text-sm">Fetching user data...</p>
+              </div>
+            ) : (
+              <UserTable users={filteredUsers} />
+            )}
+          </TabsContent>
+        </Tabs>
       ) : (
-        <AccountTable
-          accounts={filteredAccounts}
-          onViewDetails={handleViewDetails}
-          onEditAccount={handleEditAccount}
-          onDeleteAccount={handleDeleteAccount}
-        />
+        <>
+          <div className="mb-4">
+            <Button onClick={handleCreateAccount} className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Create Account
+            </Button>
+          </div>
+
+          <AccountStatsCards accounts={accounts} />
+
+          <AccountFilters
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            statusFilter={statusFilter}
+            onStatusFilterChange={setStatusFilter}
+            leaderFilter={roleFilter}
+            onLeaderFilterChange={setRoleFilter}
+            onRefresh={fetchAccounts}
+            isLoading={loading}
+          />
+
+          {loading ? (
+            <div className="text-center text-muted-foreground py-20">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+              <h3 className="text-lg font-semibold mb-2">Loading Accounts</h3>
+              <p className="text-sm">Fetching account data...</p>
+            </div>
+          ) : (
+            <UserTable 
+              users={filteredAccounts as any}
+              onViewDetails={handleViewDetails}
+              onEditAccount={handleEditAccount}
+              onDeleteAccount={handleDeleteAccount}
+            />
+          )}
+        </>
       )}
 
-      <AccountDetailsModal account={selectedAccount} isOpen={showDetailsModal} onClose={handleCloseDetailsModal} />
+      <UserDetailsModal user={selectedUser} isOpen={showDetailsModal} onClose={handleCloseDetailsModal} />
 
       <CreateAccountModal
         isOpen={showCreateModal}
@@ -182,18 +355,24 @@ export default function AccountManagement() {
         onAccountCreated={handleAccountCreated}
       />
 
-      <EditAccountModal
-        account={accountToEdit}
-        isOpen={showEditModal}
-        onClose={handleCloseEditModal}
-        onAccountUpdated={handleAccountUpdated}
+      <CreateUserModal
+        isOpen={showCreateUserModal}
+        onClose={handleCloseCreateUserModal}
+        onUserCreated={handleUserCreated}
       />
 
-      <DeleteAccountDialog
-        account={accountToDelete}
+      <EditUserModal
+        user={userToEdit}
+        isOpen={showEditModal}
+        onClose={handleCloseEditModal}
+        onUserUpdated={handleAccountUpdated}
+      />
+
+      <DeleteUserDialog
+        user={userToDelete}
         isOpen={showDeleteDialog}
         onClose={handleCloseDeleteDialog}
-        onAccountDeleted={handleAccountDeleted}
+        onUserDeleted={handleAccountDeleted}
       />
     </div>
   )

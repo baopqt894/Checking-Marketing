@@ -163,7 +163,7 @@ export function CreateAccountModal({ isOpen, onClose, onAccountCreated }: Create
                     checked={formData.isLeader}
                     onCheckedChange={(checked) => handleInputChange("isLeader", checked)}
                   />
-                  <Label htmlFor="isLeader">Leader Account</Label>
+                  <Label htmlFor="isLeader">Admin Account</Label>
                 </div>
               </CardContent>
             </Card>
