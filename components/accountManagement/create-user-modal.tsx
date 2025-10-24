@@ -171,6 +171,7 @@ export function CreateUserModal({ isOpen, onClose, onUserCreated }: CreateUserMo
                     onChange={(e) => handleInputChange("name", e.target.value)}
                     placeholder="Enter full name"
                     required
+                    className="h-10 border-2 border-muted focus:border-primary focus-visible:ring-0"
                   />
                 </div>
 
@@ -186,6 +187,7 @@ export function CreateUserModal({ isOpen, onClose, onUserCreated }: CreateUserMo
                     onChange={(e) => handleInputChange("email", e.target.value)}
                     placeholder="user@example.com"
                     required
+                    className="h-10 border-2 border-muted focus:border-primary focus-visible:ring-0"
                   />
                 </div>
 
@@ -199,13 +201,11 @@ export function CreateUserModal({ isOpen, onClose, onUserCreated }: CreateUserMo
                     type="password"
                     value={formData.password}
                     onChange={(e) => handleInputChange("password", e.target.value)}
-                    placeholder="Enter password (min. 6 characters)"
+                    placeholder="At least 6 characters"
                     required
                     minLength={6}
+                    className="h-10 border-2 border-muted focus:border-primary focus-visible:ring-0"
                   />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Password must be at least 6 characters long
-                  </p>
                 </div>
 
                 <div>
@@ -217,7 +217,7 @@ export function CreateUserModal({ isOpen, onClose, onUserCreated }: CreateUserMo
                     value={formData.role}
                     onValueChange={(value: "admin" | "user") => handleInputChange("role", value)}
                   >
-                    <SelectTrigger id="role">
+                    <SelectTrigger id="role" className="h-10 border-2 border-muted focus:border-primary focus-visible:ring-0">
                       <SelectValue placeholder="Select role" />
                     </SelectTrigger>
                     <SelectContent>
@@ -225,9 +225,6 @@ export function CreateUserModal({ isOpen, onClose, onUserCreated }: CreateUserMo
                       <SelectItem value="admin">Admin</SelectItem>
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Admin users can create and manage other users
-                  </p>
                 </div>
               </CardContent>
             </Card>

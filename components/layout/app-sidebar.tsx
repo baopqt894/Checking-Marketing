@@ -30,7 +30,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { UserAvatarProfile } from '@/components/user-avatar-profile';
-import { navItems } from '@/constants/data';
+import { navItems, adminConfigItems } from '@/constants/data';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import {
   IconBell,
@@ -39,7 +39,12 @@ import {
   IconCreditCard,
   IconLogout,
   IconPhotoUp,
-  IconUserCircle
+  IconUserCircle,
+  IconSettings,
+  IconUsers,
+  IconKey,
+  IconApps,
+  IconUserEdit
 } from '@tabler/icons-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -48,9 +53,10 @@ import { Icons } from '../icons';
 import { OrgSwitcher } from '../org-switcher';
 import { logout } from '@/lib/auth';
 import { useAuth } from '@/hooks/use-auth';
+import { getUserInfo } from "@/lib/auth"
 export const company = {
-  name: 'Acme Inc',
-  logo: IconPhotoUp,
+  name: 'Limgrow Tracking',
+  logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQw2yXWeH54wjZ3pQnk-k9cCm7wvVNqvU1MIA&s",
   plan: 'Enterprise'
 };
 
@@ -65,6 +71,8 @@ export default function AppSidebar() {
   const { isOpen } = useMediaQuery();
   const router = useRouter();
   const { user } = useAuth();
+  const info = getUserInfo()
+  const isAdmin = info?.role === 'admin'
   
   const handleSwitchTenant = (_tenantId: string) => {
     // Tenant switching functionality would be implemented here
@@ -150,6 +158,92 @@ export default function AppSidebar() {
                 </SidebarMenuItem>
               );
             })}
+            {/* CONFIG GROUP (admin only) */}
+            {isAdmin && (
+              <Collapsible
+                asChild
+                key='config'
+                defaultOpen={['/dashboard/users','/dashboard/tokens','/dashboard/apps','/dashboard/assign-app'].some(p=> pathname.startsWith(p))}
+                className='group/collapsible'
+              >
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton
+                      tooltip='Configuration'
+                      isActive={['/dashboard/users','/dashboard/tokens','/dashboard/apps','/dashboard/assign-app'].some(p=> pathname.startsWith(p))}
+                    >
+                      <IconSettings />
+                      <span>Config</span>
+                      <IconChevronRight className='ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90' />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      {/* Users */}
+                      <SidebarMenuSubItem>
+                        <SidebarMenuSubButton
+                          asChild
+                          isActive={pathname.startsWith('/dashboard/users') || pathname.startsWith('/dashboard/accounts')}
+                        >
+                          <Link href='/dashboard/users'>
+                            <IconUsers className='mr-2 size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-mute-foreground hover:text-white' />
+                            <span>Users</span>
+                          </Link>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                      {/* Store */}
+                      <SidebarMenuSubItem>
+                        <SidebarMenuSubButton
+                          asChild
+                          isActive={pathname.startsWith('/dashboard/store')}
+                        >
+                          <Link href='/dashboard/store'>
+                            <IconKey className='mr-2 size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-mute-foreground hover:text-white' />
+                            <span>Store</span>
+                          </Link>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                      {/* App Management */}
+                      <SidebarMenuSubItem>
+                        <SidebarMenuSubButton
+                          asChild
+                          isActive={pathname.startsWith('/dashboard/app-management')}
+                        >
+                          <Link href='/dashboard/app-management'>
+                            <IconUserEdit className='mr-2 size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-mute-foreground hover:text-white' />
+                            <span>App Management</span>
+                          </Link>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                      {/* Assign Apps (new) */}
+                      <SidebarMenuSubItem>
+                        <SidebarMenuSubButton
+                          asChild
+                          isActive={pathname.startsWith('/dashboard/assign-app')}
+                        >
+                          <Link href='/dashboard/assign-app'>
+                            <IconApps className='mr-2 size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-mute-foreground hover:text-white' />
+                            <span>Assign Apps</span>
+                          </Link>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                      <SidebarMenuSubItem>
+                        <SidebarMenuSubButton
+                          asChild
+                          isActive={pathname.startsWith('/dashboard/notification')}
+                        >
+                          <Link href='/dashboard/notification'>
+                            <IconBell className='mr-2 size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-mute-foreground hover:text-white' />
+                            <span>Notifications</span>
+                          </Link>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
+            )}
+            {/* Removed standalone Users item */}
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>

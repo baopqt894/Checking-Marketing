@@ -1,33 +1,40 @@
 "use client"
 
+import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import {
-  ExternalLink,
-  Copy,
-  Smartphone,
-  CheckCircle,
-  AlertCircle,
-  Globe,
-  User,
-  Crown,
-  Mail,
-  Building,
-} from "lucide-react"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { Copy, Smartphone, CheckCircle, AlertCircle, Globe, User } from "lucide-react"
 import { toast } from "sonner"
 import type { ProcessedApp } from "@/types/app"
+import { getAccessToken } from "@/lib/auth"
 
-interface AppDetailsModalProps {
+interface Notification {
+  _id: string
+  title: string
+  message: string
+  sentAt: string
+  status: "sent" | "pending" | "failed"
+}
+
+interface AppDetailsModalTabbedProps {
   app: ProcessedApp | null
   isOpen: boolean
   onClose: () => void
 }
 
-export function AppDetailsModal({ app, isOpen, onClose }: AppDetailsModalProps) {
+export function AppDetailsModalTabbed({ app, isOpen, onClose }: AppDetailsModalTabbedProps) {
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
+  const [users, setUsers] = useState<any[]>([])
+  const [usersLoading, setUsersLoading] = useState(false)
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [notificationsLoading, setNotificationsLoading] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+
   if (!app) return null
-  console.log('app:', app)
+
   const copyToClipboard = async (text: string, label: string) => {
     try {
       await navigator.clipboard.writeText(text)
@@ -56,12 +63,93 @@ export function AppDetailsModal({ app, isOpen, onClose }: AppDetailsModalProps) 
   }
 
   const StatusIcon = getStatusIcon(app.approvalState)
-
   const accountInfo = app.account_id
-  console.log('accountInfo', accountInfo)
+
+  // Load users for assign tab
+  const loadUsers = async () => {
+    setUsersLoading(true)
+    try {
+      const apiBase = (process.env.NEXT_PUBLIC_API_BACKEND_URL || "http://localhost:2703/").replace(/([^/])$/, "$1/")
+      const token = getAccessToken()
+      if (!token) throw new Error("Missing access token")
+      const response = await fetch(`${apiBase}users`, {
+        headers: {
+          accept: "*/*",
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      if (!response.ok) {
+        throw new Error("Failed to fetch users")
+      }
+      const data = await response.json()
+      setUsers(Array.isArray(data) ? data : [])
+    } catch (err: any) {
+      toast.error(err.message || "Failed to load users")
+      setUsers([])
+    } finally {
+      setUsersLoading(false)
+    }
+  }
+
+  // Load notifications for notification tab
+  const loadNotifications = async () => {
+    setNotificationsLoading(true)
+    try {
+      // Mock notifications - replace with actual API call
+      const mockNotifications: Notification[] = [
+        {
+          _id: "1",
+          title: "App Approved",
+          message: "Your app has been approved for ads",
+          sentAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+          status: "sent",
+        },
+        {
+          _id: "2",
+          title: "Update Available",
+          message: "A new version of your app is available",
+          sentAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+          status: "sent",
+        },
+      ]
+      setNotifications(mockNotifications)
+    } catch (err: any) {
+      toast.error("Failed to load notifications")
+    } finally {
+      setNotificationsLoading(false)
+    }
+  }
+
+  const handleSendNotification = async () => {
+    setSubmitting(true)
+    try {
+      // Mock send notification - replace with actual API call
+      toast.success("Notification sent successfully")
+      // Reload notifications
+      await loadNotifications()
+    } catch (err: any) {
+      toast.error(err.message || "Failed to send notification")
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleAssignUser = async () => {
+    setSubmitting(true)
+    try {
+      // Mock assign user - replace with actual API call
+      toast.success("User assigned successfully")
+      setSelectedUserId(null)
+    } catch (err: any) {
+      toast.error(err.message || "Failed to assign user")
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Smartphone className="h-5 w-5" />
@@ -69,244 +157,183 @@ export function AppDetailsModal({ app, isOpen, onClose }: AppDetailsModalProps) 
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
-          <div className="flex items-start justify-between">
-            <div className="space-y-2">
-              <h2 className="text-xl font-semibold">{app.displayName}</h2>
-              {app.linkedAppInfo && app.linkedAppInfo?.displayName !== app.displayName && (
-                <p className="text-muted-foreground">Store Name: {app.linkedAppInfo?.displayName ?? "Unknown App"}</p>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className={app.platform === "ANDROID" ? "text-green-600" : "text-blue-600"}>
-                {app.platform}
-              </Badge>
-              <Badge
-                variant={app.approvalState === "APPROVED" ? "default" : "secondary"}
-                className={
-                  app.approvalState === "APPROVED" ? "bg-green-100 text-green-800" : "bg-orange-100 text-orange-800"
-                }
-              >
-                <StatusIcon className="w-3 h-3 mr-1" />
-                {app.approvalState === "APPROVED" ? "Approved" : "Action Required"}
-              </Badge>
-            </div>
-          </div>
+        <Tabs defaultValue="details" className="w-full h-[600px] flex flex-col">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="details">Details</TabsTrigger>
+            <TabsTrigger value="assign" onClick={loadUsers}>
+              Assign
+            </TabsTrigger>
+            <TabsTrigger value="notifications" onClick={loadNotifications}>
+              Notifications
+            </TabsTrigger>
+          </TabsList>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Globe className="h-4 w-4" />
-                  Basic Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">App ID</label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <code className="text-sm bg-muted px-2 py-1 rounded flex-1">{app.appId}</code>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => copyToClipboard(app.appId, "App ID")}
-                      className="h-8 w-8 p-0"
-                    >
-                      <Copy className="h-3 w-3" />
-                    </Button>
-                  </div>
+          <div className="flex-1 overflow-y-auto">
+            {/* Details Tab */}
+            <TabsContent value="details" className="space-y-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-2">
+                  <h2 className="text-xl font-semibold">{app.displayName}</h2>
+                  {app.linkedAppInfo && app.linkedAppInfo?.displayName !== app.displayName && (
+                    <p className="text-muted-foreground">
+                      Store Name: {app.linkedAppInfo?.displayName ?? "Unknown App"}
+                    </p>
+                  )}
                 </div>
-
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Publisher ID</label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <code className="text-sm bg-muted px-2 py-1 rounded flex-1">{app.publisherId}</code>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => copyToClipboard(app.publisherId, "Publisher ID")}
-                      className="h-8 w-8 p-0"
-                    >
-                      <Copy className="h-3 w-3" />
-                    </Button>
-                  </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className={app.platform === "ANDROID" ? "text-green-600" : "text-blue-600"}>
+                    {app.platform}
+                  </Badge>
+                  <Badge
+                    variant={app.approvalState === "APPROVED" ? "default" : "secondary"}
+                    className={
+                      app.approvalState === "APPROVED" ? "bg-green-100 text-green-800" : "bg-orange-100 text-orange-800"
+                    }
+                  >
+                    <StatusIcon className="w-3 h-3 mr-1" />
+                    {app.approvalState === "APPROVED" ? "Approved" : "Action Required"}
+                  </Badge>
                 </div>
+              </div>
 
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Platform</label>
-                  <div className="mt-1">
-                    <Badge
-                      variant="outline"
-                      className={app.platform === "ANDROID" ? "text-green-600" : "text-blue-600"}
-                    >
-                      <Smartphone className="w-3 h-3 mr-1" />
-                      {app.platform}
-                    </Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  Account Assignment
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {accountInfo ? (
-                  <>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Globe className="h-4 w-4" />
+                      Basic Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">Assigned To</label>
+                      <label className="text-sm font-medium text-muted-foreground">App ID</label>
                       <div className="flex items-center gap-2 mt-1">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">{accountInfo.name}</span>
-                        {accountInfo.isLeader && (
-                          <Badge variant="outline" className="text-blue-600 border-blue-200">
-                            <Crown className="w-3 h-3 mr-1" />
-                            Leader
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Account ID</label>
-                      <div className="flex items-center gap-2 mt-1">
-                        <code className="text-sm bg-muted px-2 py-1 rounded flex-1">{accountInfo._id}</code>
+                        <code className="text-sm bg-muted px-2 py-1 rounded flex-1">{app.appId}</code>
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
-                          onClick={() => copyToClipboard(accountInfo._id, "Account ID")}
-                          className="h-8 w-8 p-0"
+                          onClick={() => copyToClipboard(app.appId, "App ID")}
+                          disabled={submitting}
                         >
                           <Copy className="h-3 w-3" />
                         </Button>
                       </div>
                     </div>
-
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">Private Email</label>
+                      <label className="text-sm font-medium text-muted-foreground">App Name</label>
                       <div className="flex items-center gap-2 mt-1">
-                        <Mail className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">{accountInfo.email_private}</span>
+                        <code className="text-sm bg-muted px-2 py-1 rounded flex-1">{app.displayName}</code>
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
-                          onClick={() => copyToClipboard(accountInfo.email_private, "Private Email")}
-                          className="h-6 w-6 p-0"
+                          onClick={() => copyToClipboard(app.displayName, "App Name")}
+                          disabled={submitting}
                         >
-                          <Copy className="h-2 w-2" />
+                          <Copy className="h-3 w-3" />
                         </Button>
                       </div>
                     </div>
-
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">Company Email</label>
+                      <label className="text-sm font-medium text-muted-foreground">App Store ID</label>
                       <div className="flex items-center gap-2 mt-1">
-                        <Building className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">{accountInfo.email_company}</span>
+                        <code className="text-sm bg-muted px-2 py-1 rounded flex-1">
+                          {app.linkedAppInfo?.appStoreId}
+                        </code>
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
-                          onClick={() => copyToClipboard(accountInfo.email_company, "Company Email")}
-                          className="h-6 w-6 p-0"
+                          onClick={() => copyToClipboard(app.linkedAppInfo?.appStoreId ?? "", "App Store ID")}
+                          disabled={submitting}
                         >
-                          <Copy className="h-2 w-2" />
+                          <Copy className="h-3 w-3" />
                         </Button>
                       </div>
                     </div>
+                  </CardContent>
+                </Card>
 
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      Account Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {accountInfo && typeof accountInfo === "object" ? (
+                      <>
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">Account ID</label>
+                          <div className="flex items-center gap-2 mt-1">
+                            <code className="text-sm bg-muted px-2 py-1 rounded flex-1">{accountInfo._id}</code>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => copyToClipboard(accountInfo._id, "Account ID")}
+                              disabled={submitting}
+                            >
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">Account Name</label>
+                          <div className="flex items-center gap-2 mt-1">
+                            <code className="text-sm bg-muted px-2 py-1 rounded flex-1">{accountInfo.name}</code>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => copyToClipboard(accountInfo.name, "Account Name")}
+                              disabled={submitting}
+                            >
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">Private Email</label>
+                          <div className="flex items-center gap-2 mt-1">
+                            <code className="text-sm bg-muted px-2 py-1 rounded flex-1">
+                              {accountInfo.email_private}
+                            </code>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => copyToClipboard(accountInfo.email_private, "Private Email")}
+                              disabled={submitting}
+                            >
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-center py-4">
+                        <p className="text-sm text-muted-foreground">No account assigned</p>
+                      </div>
+                    )}
                     <div>
+                      <label className="text-sm font-medium text-muted-foreground">App Approval State</label>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge
+                          variant={app.approvalState === "APPROVED" ? "default" : "secondary"}
+                          className={
+                            app.approvalState === "APPROVED"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-orange-100 text-orange-800"
+                          }
+                        >
+                          <StatusIcon className="w-3 h-3 mr-1" />
+                          {app.approvalState === "APPROVED" ? "Approved" : "Action Required"}
+                        </Badge>
+                      </div>
                     </div>
-                  </>
-                ) : (
-                  <div className="text-center py-6">
-                    <div className="bg-muted rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
-                      <User className="h-6 w-6 text-muted-foreground" />
-                    </div>
-                    <p className="text-sm text-muted-foreground font-medium">Chưa được assign cho ai</p>
-                    <p className="text-xs text-muted-foreground mt-1">App này chưa được gán cho account nào</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Store Information */}
-          {app.linkedAppInfo && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <ExternalLink className="h-4 w-4" />
-                  Store Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Store Name</label>
-                    <p className="text-sm mt-1">{app.linkedAppInfo.displayName}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Store ID</label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <code className="text-sm bg-muted px-2 py-1 rounded flex-1 truncate max-w-[200px]">
-                        {app.linkedAppInfo?.appStoreId}
-                      </code>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => copyToClipboard(app.linkedAppInfo!.appStoreId, "Store ID")}
-                        className="h-8 w-8 p-0"
-                      >
-                        <Copy className="h-3 w-3" />
-                      </Button>
-                    </div>
-
-                  </div>
-                </div>
-                <Button onClick={openAppStore} className="w-full flex items-center gap-2" size="sm">
-                  <ExternalLink className="h-4 w-4" />
-                  View in {app.platform === "ANDROID" ? "Play Store" : "App Store"}
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Status Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <StatusIcon className={`h-4 w-4 ${getStatusColor(app.approvalState)}`} />
-                Approval Status
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={`font-medium ${getStatusColor(app.approvalState)}`}>
-                    {app.approvalState === "APPROVED" ? "Approved" : "Action Required"}
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {app.approvalState === "APPROVED"
-                      ? "This app is approved and can show ads"
-                      : "This app requires action before it can show ads"}
-                  </p>
-                </div>
-                <Badge
-                  variant={app.approvalState === "APPROVED" ? "default" : "secondary"}
-                  className={
-                    app.approvalState === "APPROVED" ? "bg-green-100 text-green-800" : "bg-orange-100 text-orange-800"
-                  }
-                >
-                  {app.approvalState}
-                </Badge>
+                  </CardContent>
+                </Card>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            </TabsContent>
+          </div>
+        </Tabs>
       </DialogContent>
     </Dialog>
   )

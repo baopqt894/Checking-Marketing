@@ -52,12 +52,15 @@ export function OrgSwitcher({
               size='lg'
               className='data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
             >
-              <div className='bg-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg'>
-                <GalleryVerticalEnd className='size-4' />
-              </div>
+              <img
+                src='https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQw2yXWeH54wjZ3pQnk-k9cCm7wvVNqvU1MIA&s'
+                alt='Logo'
+                className='h-10 w-10 border-2 border-gray-500 rounded-full'
+              />
+
               <div className='flex flex-col gap-0.5 leading-none'>
-                <span className='font-semibold'>Next Starter</span>
-                <span className=''>{selectedTenant.name}</span>
+                <span className='font-semibold'>Limgrow</span>
+                <span className=''>tracking platform</span>
               </div>
               <ChevronsUpDown className='ml-auto' />
             </SidebarMenuButton>
