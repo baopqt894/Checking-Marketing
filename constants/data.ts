@@ -14,38 +14,47 @@ export type Product = {
 //Info: The following data is used for the sidebar navigation and Cmd K bar.
 export const navItems: NavItem[] = [
   {
-    title: 'App Perfomance',
+    title: 'App Performance',
     url: '/dashboard/app-performance',
     icon: 'dashboard',
     shortcut: ['d', 'd'],
-    isActive: false,
-    items: [] // No child items
+    isActive: false
   },
   {
-    title: 'App',
+    title: 'Apps',
     url: '/dashboard/apps',
-    icon: 'product',
-    shortcut: ['p', 'p'],
-    isActive: false,
-    items: [] // No child items
+    icon: 'kanban'
   },
   {
-    title: 'Accounts',
-    url: '/dashboard/accounts',
-    icon: 'billing',
-    shortcut: ['b', 'b'],
-    isActive: false,
-    items: [] // No child items
-  },
-  {
-    title: 'Tokens',
-    url: '/dashboard/tokens',
-    icon: 'kanban',
-    shortcut: ['k', 'k'],
-    isActive: false,
-    items: [] // No child items
+    title: 'IAP Tracking',
+    url: '/dashboard/iap-tracking',
+    icon: 'billing'
   }
 ];
+
+// Admin-only config items
+export const adminConfigItems: NavItem = {
+  title: 'Config',
+  url: '#',
+  icon: 'settings',
+  items: [
+    {
+      title: 'Users',
+      url: '/dashboard/users',
+      icon: 'user'
+    },
+    {
+      title: 'Store',
+      url: '/dashboard/store',
+      icon: 'billing'
+    },
+    {
+      title: 'Assign App',
+      url: '/dashboard/assign-app',
+      icon: 'userPen'
+    }
+  ]
+};
 
 export interface SaleUser {
   id: number;

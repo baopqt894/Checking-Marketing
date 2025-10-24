@@ -1,210 +1,193 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useEffect, useState, useMemo } from "react"
+import Link from "next/link"
 import { DashboardHeader } from "@/components/dashboard-header"
-
 import { toast } from "sonner"
-import type { PublisherApp, ProcessedApp } from "@/types/app"
-import { PublisherSelector } from "@/components/appManagement/publisher-selector"
-import { AppTable } from "@/components/appManagement/app-table"
-import { AppFilters } from "@/components/appManagement/app-filters"
-import { AppDetailsModal } from "@/components/appManagement/app-details-modal"
-import { CompactPublisherSelector } from "@/components/appManagement/compact-publisher-selector"
-import { AppTabs } from "@/components/appManagement/app-tabs"
-import { Globe } from "lucide-react"
-import { EnhancedStatsCards } from "@/components/appManagement/app-stats-cards"
+import { Loader2, Search } from "lucide-react"
+import { getUserInfo, getAccessToken } from "@/lib/auth"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 
-export default function AppManagement() {
-  const [rawApps, setRawApps] = useState<PublisherApp[]>([])
-  const [loading, setLoading] = useState<boolean>(false)
-  const [isSyncing, setIsSyncing] = useState<boolean>(false)
-  const [selectedPublisherId, setSelectedPublisherId] = useState<string | null>(null)
-  const [lastSyncTime, setLastSyncTime] = useState<string | null>(null)
-  const [syncError, setSyncError] = useState<string | null>(null)
+interface RawApp {
+  _id: string
+  appName: string
+  appUrl?: string
+  appIcon?: string
+  appIdentifier: string
+  appId?: string // AdMob app id
+  // storeId may be populated object OR just the id string
+  storeId?: string | { _id: string; platform: string; name: string }
+  user_id?: string | { _id: string }
+  createdAt?: string
+  updatedAt?: string
+}
 
-  const [searchTerm, setSearchTerm] = useState("")
-  const [platformFilter, setPlatformFilter] = useState("all")
-  const [approvalFilter, setApprovalFilter] = useState("all")
+interface StoreRef { _id: string; name: string; platform: string }
 
-  const [selectedApp, setSelectedApp] = useState<ProcessedApp | null>(null)
-  const [showDetailsModal, setShowDetailsModal] = useState(false)
+interface AppRow {
+  _id: string
+  name: string
+  identifier: string
+  platform: string
+  store: string
+  storeId?: string
+  createdAt?: string
+  icon?: string
+  url?: string
+  appId?: string
+}
 
-  const processedApps = useMemo((): ProcessedApp[] => {
-    const apps: ProcessedApp[] = []
+export default function UserAppsPage() {
+  const [apps, setApps] = useState<AppRow[]>([])
+  const [loading, setLoading] = useState(false)
+  const [search, setSearch] = useState("")
+  const [hydratingStores, setHydratingStores] = useState(false)
+  const userInfo = getUserInfo()
+  const userId = (userInfo as any)?.id || (userInfo as any)?._id
 
-    rawApps.forEach((publisherData) => {
-      publisherData.app.forEach((appInfo) => {
-        console.log('appInfo',appInfo)
-        apps.push({
-          _id: appInfo._id,
-          appId: appInfo.appId,
-          displayName: appInfo.manualAppInfo?.displayName ?? 'Unknow',
-          platform: appInfo.platform,
-          approvalState: appInfo.appApprovalState,
-          publisherId: publisherData.Publisher_id,
-          linkedAppInfo: appInfo.linkedAppInfo,
-          account_id: publisherData.account_id
-        })
-      })
-    })
+  const normalize = (raw: RawApp): AppRow => {
+    let platform = "-"
+    let storeName = "-"
+    let storeIdValue: string | undefined
+    if (typeof raw.storeId === 'string') {
+      storeIdValue = raw.storeId
+    } else if (raw.storeId && typeof raw.storeId === 'object') {
+      storeIdValue = raw.storeId._id
+      platform = raw.storeId.platform || '-'
+      storeName = raw.storeId.name || '-'
+    }
+    return {
+      _id: raw._id,
+      name: raw.appName || "Unnamed",
+      identifier: raw.appIdentifier || "-",
+      platform,
+      store: storeName,
+      storeId: storeIdValue,
+      createdAt: raw.createdAt,
+      icon: raw.appIcon,
+      url: raw.appUrl,
+      appId: raw.appId,
+    }
+  }
 
-    return apps
-  }, [rawApps])
-
-  const filteredApps = useMemo(() => {
-    return processedApps.filter((app) => {
-      const matchesSearch =
-        app.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        app.appId.toLowerCase().includes(searchTerm.toLowerCase())
-
-      const matchesPlatform = platformFilter === "all" || app.platform === platformFilter
-      const matchesApproval = approvalFilter === "all" || app.approvalState === approvalFilter
-
-      return matchesSearch && matchesPlatform && matchesApproval
-    })
-  }, [processedApps, searchTerm, platformFilter, approvalFilter])
-
-  const fetchApps = async (publisherId: string) => {
-    if (!publisherId) return
-
+  const fetchUserApps = async () => {
+    if (!userId) return
     setLoading(true)
-    setSyncError(null)
-
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL
-      const response = await fetch(`${apiUrl}app-info/publisher/${publisherId}`)
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+      const apiUrl = (process.env.NEXT_PUBLIC_API_BACKEND_URL || 'http://localhost:2703/').replace(/([^/])$/,'$1/')
+      const token = getAccessToken()
+      if (!token) throw new Error("No token")
+      const res = await fetch(`${apiUrl}app-info/user/${userId}`, {
+        headers: { accept: "*/*", Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data: RawApp[] = await res.json()
+      const mapped = Array.isArray(data) ? data.map(normalize) : []
+      setApps(mapped)
+      // If any store names missing but we have storeId -> hydrate
+      if (mapped.some(a => a.store === '-' && a.storeId)) {
+        hydrateStoreNames(mapped)
       }
-
-      const data: PublisherApp[] = await response.json()
-      setRawApps(data)
-      setLastSyncTime(new Date().toISOString())
-
-      toast.success(`Loaded ${data.length} app records for ${publisherId}`)
-    } catch (err) {
-      console.error("Failed to fetch apps:", err)
-      const errorMessage = err instanceof Error ? err.message : "Unknown error"
-      setSyncError(errorMessage)
-      toast.error("Failed to fetch apps")
-    } finally {
-      setLoading(false)
-    }
+    } catch (e: any) {
+      console.error(e)
+      toast.error(e.message || "Failed to fetch apps")
+    } finally { setLoading(false) }
   }
 
-  const syncFromAdMob = async (publisherId: string) => {
-    if (!publisherId) return
-
-    setIsSyncing(true)
-    setSyncError(null)
-
+  const hydrateStoreNames = async (current: AppRow[]) => {
+    setHydratingStores(true)
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL
-      const response = await fetch(`${apiUrl}app-info/sync-from-admob?publisher_id=${publisherId}`)
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      toast.success("Successfully synced data from AdMob")
-      await fetchApps(publisherId)
-    } catch (err) {
-      console.error("Failed to sync from AdMob:", err)
-      const errorMessage = err instanceof Error ? err.message : "Failed to sync from AdMob"
-      setSyncError(errorMessage)
-      toast.error("Failed to sync from AdMob")
-    } finally {
-      setIsSyncing(false)
-    }
+      const apiUrl = (process.env.NEXT_PUBLIC_API_BACKEND_URL || 'http://localhost:2703/').replace(/([^/])$/,'$1/')
+      const token = getAccessToken(); if(!token) return
+      const res = await fetch(`${apiUrl}stores`, { headers: { accept: '*/*', Authorization: `Bearer ${token}` } })
+      if(!res.ok) throw new Error('Stores load failed')
+      const stores: StoreRef[] = await res.json()
+      const map = new Map(stores.map(s => [s._id, s]))
+      setApps(prev => prev.map(a => {
+        if (a.store !== '-' || !a.storeId) return a
+        const s = map.get(a.storeId)
+        return s ? { ...a, store: s.name, platform: s.platform } : a
+      }))
+    } catch (e:any) {
+      console.warn('Hydrate stores failed', e.message)
+    } finally { setHydratingStores(false) }
   }
 
-  const handlePublisherChange = (publisherId: string) => {
-    setSelectedPublisherId(publisherId)
-    setRawApps([])
-    setLastSyncTime(null)
-    setSyncError(null)
-    fetchApps(publisherId)
-  }
+  useEffect(() => { fetchUserApps() }, [userId])
 
-  const handleSyncData = (publisherId: string) => {
-    syncFromAdMob(publisherId)
-  }
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase().trim()
+    if (!q) return apps
+    return apps.filter(a =>
+      a.name.toLowerCase().includes(q) ||
+      a.identifier.toLowerCase().includes(q) ||
+      a.platform.toLowerCase().includes(q) ||
+      a.store.toLowerCase().includes(q)
+    )
+  }, [apps, search])
 
-  const handleViewDetails = (app: ProcessedApp) => {
-    setSelectedApp(app)
-    setShowDetailsModal(true)
-  }
-
-  const handleCloseDetailsModal = () => {
-    setShowDetailsModal(false)
-    setSelectedApp(null)
-  }
-
-  const handleRefreshApps = () => {
-    if (selectedPublisherId) {
-      fetchApps(selectedPublisherId)
-    }
-  }
+  const formatDate = (d?: string) => d ? new Date(d).toLocaleDateString() : "-"
 
   return (
     <div className="flex flex-col gap-6">
-      <DashboardHeader
-        title="App Management"
-        description="Manage and monitor your AdMob applications across all platforms"
-      />
+      <DashboardHeader title="My Apps" description="Applications assigned to you" />
 
-      <CompactPublisherSelector
-        selectedPublisherId={selectedPublisherId}
-        onPublisherChange={handlePublisherChange}
-        onSyncData={handleSyncData}
-        isSyncing={isSyncing}
-        lastSyncTime={lastSyncTime}
-        syncError={syncError}
-      />
-
-      {selectedPublisherId && (
-        <>
-          <EnhancedStatsCards apps={processedApps} />
-
-          <AppFilters
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-            platformFilter={platformFilter}
-            onPlatformFilterChange={setPlatformFilter}
-            approvalFilter={approvalFilter}
-            onApprovalFilterChange={setApprovalFilter}
-            onRefresh={handleRefreshApps}
-            isLoading={loading}
-          />
-
-          {loading ? (
-            <div className="text-center text-muted-foreground py-20">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-              <h3 className="text-lg font-semibold mb-2">Loading Applications</h3>
-              <p className="text-sm">Fetching apps for {selectedPublisherId}...</p>
-            </div>
-          ) : (
-            <AppTabs apps={filteredApps} onViewDetails={handleViewDetails} />
-          )}
-        </>
-      )}
-
-      {!selectedPublisherId && !loading && (
-        <div className="text-center text-muted-foreground py-20">
-          <div className="max-w-md mx-auto">
-            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-              <Globe className="h-8 w-8" />
-            </div>
-            <h3 className="text-xl font-semibold mb-2">Select a Publisher</h3>
-            <p className="text-sm">
-              Choose a publisher from the dropdown above to view and manage their applications across all platforms.
-            </p>
-          </div>
+      <div className="flex items-center gap-3">
+        <div className="relative w-64">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search app..." className="h-9 w-full pl-8 pr-3 rounded-md border-2 border-muted bg-background text-sm outline-none focus:border-primary" />
         </div>
-      )}
+        <Button variant="outline" size="sm" disabled={loading} onClick={fetchUserApps}>
+          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Refresh
+        </Button>
+        {hydratingStores && <span className='text-xs text-muted-foreground'>Updating store names...</span>}
+        <div className="ml-auto text-xs text-muted-foreground">{filtered.length} / {apps.length} apps</div>
+      </div>
 
-      <AppDetailsModal app={selectedApp} isOpen={showDetailsModal} onClose={handleCloseDetailsModal} />
+      <div className="rounded-md border overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="bg-muted/40">
+            <tr className="text-xs uppercase text-muted-foreground">
+              <th className="px-3 py-2 text-left font-medium">Name</th>
+              <th className="px-3 py-2 text-left font-medium">Identifier</th>
+              <th className="px-3 py-2 text-left font-medium">Platform</th>
+              <th className="px-3 py-2 text-left font-medium">Store</th>
+              <th className="px-3 py-2 text-left font-medium">Created</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr><td colSpan={5} className="py-14 text-center text-muted-foreground"><Loader2 className="mx-auto mb-3 h-6 w-6 animate-spin" />Loading apps...</td></tr>
+            ) : filtered.length === 0 ? (
+              <tr><td colSpan={5} className="py-14 text-center text-muted-foreground">No apps found.</td></tr>
+            ) : (
+              filtered.map(app => (
+                <tr key={app._id} className="border-t hover:bg-muted/40 transition-colors">
+                  <td className="px-3 py-2 font-medium flex items-center gap-2">
+                    {app.icon && <img src={app.icon} alt={app.name} className="h-5 w-5 rounded object-cover" />}
+                    {app.appId ? (
+                      <Link href={`/dashboard/apps/${encodeURIComponent(app.appId)}`} className="hover:underline" title="View AdMob metrics (30 days)">
+                        {app.name}
+                      </Link>
+                    ) : (
+                      app.url ? (
+                        <a href={app.url} target="_blank" rel="noopener noreferrer" className="hover:underline">{app.name}</a>
+                      ) : (
+                        app.name
+                      )
+                    )}
+                  </td>
+                  <td className="px-3 py-2 font-mono text-xs">{app.identifier}</td>
+                  <td className="px-3 py-2"><Badge variant={app.platform.toLowerCase() === 'android' ? 'default' : 'secondary'}>{app.platform || '-'}</Badge></td>
+                  <td className="px-3 py-2">{app.store}</td>
+                  <td className="px-3 py-2 text-xs">{formatDate(app.createdAt)}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }

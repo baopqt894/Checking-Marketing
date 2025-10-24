@@ -602,7 +602,7 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
 
           <div className="flex items-center justify-center py-20">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-500 mx-auto mb-4"></div>
+              <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-amber-500 mx-auto mb-4"></div>
               <p className="text-gray-800 text-lg font-semibold">Đang tải dữ liệu...</p>
               <p className="text-gray-600 text-sm mt-1">Kết nối đến API server...</p>
             </div>
@@ -626,7 +626,7 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
             <div className="flex items-center gap-3">
               <label className="text-sm font-semibold text-gray-800">Publisher:</label>
               <Select value={selectedPublisherId} onValueChange={handlePublisherChange}>
-                <SelectTrigger className="w-64 bg-white border-gray-300 focus:border-blue-500">
+                <SelectTrigger className="w-64 bg-white border-gray-300 focus:border-amber-500">
                   <SelectValue placeholder="Select publisher" />
                 </SelectTrigger>
                 <SelectContent className="bg-white border-gray-200">
@@ -664,12 +664,12 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
                     variant="outline"
                     size="sm"
                     onClick={() => setShowFilters(!showFilters)}
-                    className={showFilters ? "bg-blue-50 border-blue-200" : ""}
+                    className={showFilters ? "bg-amber-50 border-amber-200" : ""}
                   >
                     <Filter className="w-4 h-4 mr-2" />
                     Filters
                     {Object.keys(filterConfig).length > 0 && (
-                      <span className="ml-2 bg-blue-600 text-white text-xs rounded-full px-2 py-0.5">
+                      <span className="ml-2 bg-amber-600 text-white text-xs rounded-full px-2 py-0.5">
                         {Object.keys(filterConfig).length}
                       </span>
                     )}
@@ -685,7 +685,7 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
                         <Button
                           size="sm"
                           onClick={() => setShowComparisonModal(true)}
-                          className="bg-blue-600 hover:bg-blue-700"
+                          className="bg-amber-600 hover:bg-amber-700"
                         >
                           Compare Dates
                         </Button>
@@ -694,7 +694,7 @@ export function AppMetricsDashboard({ initialSelectedApp }: AppMetricsDashboardP
                   )}
                   <button
                     onClick={handleBackToOverview}
-                    className="px-4 py-2 text-sm font-medium text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200"
+                    className="px-4 py-2 text-sm font-medium text-amber-700 bg-amber-100 rounded-md hover:bg-amber-200"
                   >
                     Back to Overview
                   </button>
