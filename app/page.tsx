@@ -109,7 +109,7 @@ export default function LoginPage() {
     const password = formData.get("password") as string
 
     try {
-      const response = await fetch("http://localhost:2703/auth/login", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BACKEND_URL}auth/login`, {
         method: "POST",
         headers: {
           accept: "*/*",
