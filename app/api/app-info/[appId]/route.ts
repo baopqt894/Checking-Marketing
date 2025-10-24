@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BACKEND_URL || 'http://localhost:2703';
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { appId: string } }
-) {
+export async function PATCH(request: NextRequest) {
   try {
-    const appId = params.appId;
+    // Extract appId from the URL path
+    const url = new URL(request.url);
+    const segments = url.pathname.split('/');
+    const appId = segments[segments.length - 1];
     const body = await request.json();
 
     const response = await fetch(`${API_BASE_URL}/app-info/${appId}`, {

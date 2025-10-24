@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BACKEND_URL || 'http://localhost:2703';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { userId: string } }
-) {
+export async function GET(request: NextRequest) {
   try {
-    const userId = params.userId;
+    // Extract userId from the URL path
+    const url = new URL(request.url);
+    const segments = url.pathname.split('/');
+    const userId = segments[segments.length - 1];
 
     const response = await fetch(`${API_BASE_URL}/app-info/user/${userId}`, {
       method: 'GET',
