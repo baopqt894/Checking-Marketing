@@ -175,6 +175,11 @@ export function HistoryList({ token }: HistoryListProps) {
                 <Badge variant="secondary" className="text-xs whitespace-nowrap">
                   {notif.sendType}
                 </Badge>
+                {notif.lastSentAt && (
+                  <Badge className="bg-blue-100 text-blue-800 text-xs">
+                    SendAt: {notif.lastSentAt}
+                  </Badge>
+                )}
                 {notif.status === "sent" && (
                   <Badge className="bg-green-100 text-green-800 text-xs">
                     <CheckCircle2 className="h-3 w-3 mr-1" />
