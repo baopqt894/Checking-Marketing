@@ -44,23 +44,24 @@ export function SendNotificationForm({
   }
 
   const handleSubmit = () => {
-    if (title.trim() && message.trim()) {
-      const data: SendNotificationData = {
-        title,
-        message,
-        sendType,
-      }
-
-      if (sendType === "at" && date) {
-        data.date = date
-        data.hour = hour
-      } else if (sendType === "daily") {
-        data.hour = hour
-      }
-
-      onSubmit(data)
+  if (title.trim() && message.trim()) {
+    const data: SendNotificationData = {
+      title,
+      message,
+      sendType,
     }
+
+    if (sendType === "at" && date) {
+      const [year, month, day] = date.split("-");
+      data.date = `${day}/${month}/${year}`;
+      data.hour = hour;
+    } else if (sendType === "daily") {
+      data.hour = hour;
+    }
+
+    onSubmit(data)
   }
+}
 
   const isValid =
     title.trim() && message.trim() && (sendType === "immediate" || (sendType === "at" && date) || sendType === "daily")
