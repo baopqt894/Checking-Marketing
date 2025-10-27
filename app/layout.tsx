@@ -9,8 +9,8 @@ import { Toaster } from '@/components/ui/sonner'
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "AdMob Dashboard",
-  description: "Dashboard for AdMob analytics and reporting",
+  title: "LimGrow Checking Marketing Dashboard",
+  description: "Dashboard for LimGrow Checking Marketing analytics and reporting",
 };
 
 export default function RootLayout({
