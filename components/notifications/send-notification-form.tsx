@@ -19,6 +19,7 @@ export interface SendNotificationData {
   sendType: "immediate" | "at" | "daily"
   date?: string
   hour?: number
+  minute?: number
 }
 
 export function SendNotificationForm({
@@ -32,6 +33,7 @@ export function SendNotificationForm({
   const [sendType, setSendType] = useState<"immediate" | "at" | "daily">("immediate")
   const [date, setDate] = useState("")
   const [hour, setHour] = useState(8)
+  const [minute, setMinute] = useState(0)
 
   const handleTitleChange = (value: string) => {
     setTitle(value)
@@ -44,27 +46,33 @@ export function SendNotificationForm({
   }
 
   const handleSubmit = () => {
-  if (title.trim() && message.trim()) {
-    const data: SendNotificationData = {
-      title,
-      message,
-      sendType,
-    }
+    if (title.trim() && message.trim()) {
+      const data: SendNotificationData = {
+        title,
+        message,
+        sendType,
+      }
 
-    if (sendType === "at" && date) {
-      const [year, month, day] = date.split("-");
-      data.date = `${day}/${month}/${year}`;
-      data.hour = hour;
-    } else if (sendType === "daily") {
-      data.hour = hour;
-    }
+      if (sendType === "at" && date) {
+        const [year, month, day] = date.split("-");
+        data.date = `${day}/${month}/${year}`;
+        data.hour = hour;
+        data.minute = minute;
+      } else if (sendType === "daily") {
+        data.hour = hour;
+        data.minute = minute;
+      }
 
-    onSubmit(data)
+      onSubmit(data)
+    }
   }
-}
 
   const isValid =
-    title.trim() && message.trim() && (sendType === "immediate" || (sendType === "at" && date) || sendType === "daily")
+    title.trim() &&
+    message.trim() &&
+    (sendType === "immediate" ||
+      (sendType === "at" && date) ||
+      sendType === "daily")
 
   return (
     <div className="border border-border rounded-lg p-6 bg-card space-y-6">
@@ -105,7 +113,7 @@ export function SendNotificationForm({
       </div>
 
       {sendType === "at" && (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <div>
             <label className="text-sm font-semibold text-foreground mb-2 block">Date *</label>
             <Input
@@ -126,20 +134,48 @@ export function SendNotificationForm({
               className="border-2 border-muted"
             />
           </div>
+          <div>
+            <label className="text-sm font-semibold text-foreground mb-2 block">Minute *</label>
+            <select
+              value={minute}
+              onChange={(e) => setMinute(Number(e.target.value))}
+              className="w-full rounded-md border-2 border-muted bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            >
+              <option value={0}>00</option>
+              <option value={15}>15</option>
+              <option value={30}>30</option>
+              <option value={45}>45</option>
+            </select>
+          </div>
         </div>
       )}
 
       {sendType === "daily" && (
-        <div>
-          <label className="text-sm font-semibold text-foreground mb-2 block">Hour (0-23) *</label>
-          <Input
-            type="number"
-            min="0"
-            max="23"
-            value={hour}
-            onChange={(e) => setHour(Number.parseInt(e.target.value) || 0)}
-            className="border-2 border-muted"
-          />
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm font-semibold text-foreground mb-2 block">Hour (0-23) *</label>
+            <Input
+              type="number"
+              min="0"
+              max="23"
+              value={hour}
+              onChange={(e) => setHour(Number.parseInt(e.target.value) || 0)}
+              className="border-2 border-muted"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-semibold text-foreground mb-2 block">Minute *</label>
+            <select
+              value={minute}
+              onChange={(e) => setMinute(Number(e.target.value))}
+              className="w-full rounded-md border-2 border-muted bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            >
+              <option value={0}>00</option>
+              <option value={15}>15</option>
+              <option value={30}>30</option>
+              <option value={45}>45</option>
+            </select>
+          </div>
         </div>
       )}
 
