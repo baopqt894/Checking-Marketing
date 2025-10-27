@@ -3,10 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
-    "start": "node --max-old-space-size=512 dist/main.js",
-    "lint": "next lint"
+    "start": "next start"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.14",
