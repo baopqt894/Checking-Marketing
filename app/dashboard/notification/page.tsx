@@ -122,8 +122,10 @@ export default function NotificationsPage() {
       if (pendingData.sendType === "at" && pendingData.date && pendingData.hour !== undefined) {
         payload.date = pendingData.date
         payload.hour = pendingData.hour
+        payload.minute = pendingData.minute 
       } else if (pendingData.sendType === "daily" && pendingData.hour !== undefined) {
         payload.hour = pendingData.hour
+        payload.minute = pendingData.minute
       }
 
       const res = await fetch(`${apiBase}fcm/topic/multilang-multiapp`, {
